@@ -1,0 +1,26 @@
+{
+  "name": "every-photobooth-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Theme-ready React kiosk and mobile takeaway for the Every AI photobooth.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "start": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.1",
+    "leva": "^0.10.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4",
+    "sass": "^1.90.0",
+    "vite": "^7.1.3"
+  }
+}
