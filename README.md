@@ -56,3 +56,7 @@ In local development, the top-right Creative lab menu switches between:
 - `branded.posthog` — a sponsor skin inspired by analytics dashboards and desktop operating systems.
 
 The selector is developer-only by default (`import.meta.env.DEV`). Set `VITE_SHOW_DEV_MENU=true` to expose it in a preview build.
+
+## Deploy on Render (free)
+
+Create a Static Site from this repository using the included `render.yaml`. After the backend Web Service is created, set `VITE_API_URL` to its Render URL (for example, `https://every-photobooth-backend.onrender.com`) and redeploy the static site. `VITE_SHOW_DEV_MENU=true` keeps the Creative Lab selector visible for client review; set it to `false` for a guest-facing build.
