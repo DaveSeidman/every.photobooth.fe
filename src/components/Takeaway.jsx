@@ -50,14 +50,14 @@ export default function Takeaway() {
 
   return (
     <main className="takeaway">
-      <header className="takeaway__header"><span>EVERY</span><span>Portrait / {photoId.slice(-6)}</span></header>
+      <header className="takeaway__header"><span className="takeaway__wordmark">EV<em>E</em>RY</span><span>Thesis: 2027 / {photoId.slice(-6)}</span></header>
       <div className="takeaway__image-wrap">
         <img src={stillUrl} alt="Your completed three-image portrait strip" />
       </div>
       <section className="takeaway__copy">
-        <p className="eyebrow">Your portrait study</p>
-        <h1>Keep the moment.</h1>
-        <p>Save the animated version to your phone, or open your share sheet to send it on.</p>
+        <p className="eyebrow">Portrait study / complete</p>
+        <h1>Keep the<br /><em>thesis.</em></h1>
+        <p>Save the animated screenprint to your phone, or open your share sheet to send it on.</p>
         <button type="button" className="primary-button" onClick={share} disabled={sharing}>
           {sharing ? "Preparing…" : "Save or share"}<span>↓</span>
         </button>

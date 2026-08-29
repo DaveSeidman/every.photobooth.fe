@@ -1,6 +1,6 @@
 # Every Photobooth Frontend
 
-React/Vite kiosk and mobile takeaway modeled on the Halloween photobooth's state and data flow, with a new theme-neutral visual shell.
+React/Vite kiosk and mobile takeaway modeled on the Halloween photobooth's state and data flow, art-directed as an Every / Thesis: 2027 editorial print study.
 
 ## Experience flow
 
@@ -24,9 +24,19 @@ npm run dev
 
 The backend is expected at `http://localhost:8000`; change `VITE_API_URL` for deployment.
 
-## Theme handoff
+## Visual direction
 
-The current UI is intentionally an editorial placeholder, not the final event theme. The fastest adaptation points are:
+The kiosk uses Thesis-inspired cream paper, near-black fields, oversized grotesque headlines with serif italics, electric blue/coral/cyan accents, screenprint rules, star marks, and rough diagonal swashes. The AI variants are named **Thesis Blue** and **Thesis Coral** and are configured server-side to produce:
+
+- high-contrast black-and-white photographic cutouts
+- saturated blue/coral backgrounds
+- rough diagonal dry-brush swashes behind subjects
+- coarse halftone, photocopy, paper-fiber, and misregistered risograph texture
+- exact framing, person count, poses, and recognizable faces
+
+The prompts prohibit generated text, logos, watermarks, borders, and objects over faces.
+
+The fastest adaptation points for a future event are:
 
 - CSS tokens at the top of `src/styles.scss`
 - title and kicker variables in `.env`

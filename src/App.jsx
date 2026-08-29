@@ -131,21 +131,29 @@ function Booth() {
 
       {phase === "attract" && (
         <section className="attract-panel">
-          <p className="eyebrow">{appConfig.kicker}</p>
-          <h1>{appConfig.title}</h1>
-          <p className="attract-panel__intro">One photograph. Three parallel interpretations. A print to keep and a moving version for your phone.</p>
-          <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
-            Begin portrait <span>→</span>
-          </button>
-          <p className="attract-panel__note">Camera access stays on this booth until your portrait is captured.</p>
+          <div className="attract-panel__copy">
+            <p className="eyebrow">{appConfig.kicker}</p>
+            <h1><span>Portraits</span><em>after automation.</em></h1>
+            <p className="attract-panel__intro">Step into the Thesis portrait studio. One photograph becomes two high-contrast, screenprinted futures.</p>
+            <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
+              Make your portrait <span>↗</span>
+            </button>
+            <p className="attract-panel__note">Thursday, November 5, 2026&nbsp;&nbsp;✳&nbsp;&nbsp;Pioneer Works, Brooklyn</p>
+          </div>
+          <aside className="thesis-poster" aria-hidden="true">
+            <div className="thesis-poster__swash" />
+            <span className="thesis-poster__star">✳</span>
+            <strong>THESIS:<br />2027</strong>
+            <p>One portrait<br /><em>on the edge of AI</em></p>
+          </aside>
         </section>
       )}
 
       {showCaptureControls && (
         <section className="capture-panel">
           <div>
-            <p className="eyebrow">Frame your portrait</p>
-            <h1>{cameraStatus === "ready" ? "Ready when you are." : "Camera setup."}</h1>
+            <p className="eyebrow">Thesis portrait study / 001</p>
+            <h1>{cameraStatus === "ready" ? <>Frame <em>the human.</em></> : "Camera setup."}</h1>
             {error && <p className="error-message" role="alert">{error}</p>}
           </div>
           <div className="capture-panel__actions">
@@ -163,16 +171,16 @@ function Booth() {
 
       {phase === "countdown" && (
         <section className="countdown" aria-live="assertive">
-          <p>Hold still</p>
+          <p>Hold the thesis</p>
           <strong>{count || "•"}</strong>
         </section>
       )}
 
       {phase === "processing" && (
         <section className="processing" aria-live="polite">
-          <div className="processing__orb"><span /><span /><span /></div>
-          <p className="eyebrow">Making two new worlds</p>
-          <h1>Stay close.<br />Your portrait is developing.</h1>
+          <div className="processing__star">✳</div>
+          <p className="eyebrow">Making two color studies</p>
+          <h1>The portrait is<br /><em>going to press.</em></h1>
         </section>
       )}
 
