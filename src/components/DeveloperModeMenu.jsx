@@ -1,6 +1,6 @@
 const devVisible = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_MENU === "true";
 
-export default function DeveloperModeMenu({ modes, mode, onModeChange, onReset, oracleContext, onOracleContextChange }) {
+export default function DeveloperModeMenu({ modes, mode, onModeChange, onReset, onRunDemo, demoProgress, oracleContext, onOracleContextChange }) {
   if (!devVisible) return null;
   const oracle = mode === "every.oracle";
   return (
@@ -19,6 +19,7 @@ export default function DeveloperModeMenu({ modes, mode, onModeChange, onReset, 
         </div>
       )}
       <button type="button" className="developer-menu__reset" onClick={onReset}>Reset memory / canvas</button>
+      {mode === "every.one.in" && <button type="button" className="developer-menu__demo" onClick={onRunDemo} disabled={demoProgress > 0}>Run 12-frame group demo {demoProgress > 0 ? `(${demoProgress}/12)` : "↗"}</button>}
     </aside>
   );
 }

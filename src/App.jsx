@@ -34,6 +34,7 @@ function Booth() {
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [oracleContext, setOracleContext] = useState({ city: "", industry: "", role: "" });
   const [designerOptions, setDesignerOptions] = useState({ palette: "blue", brushX: 50, brushY: 50, texture: "coarse" });
+  const [demoProgress, setDemoProgress] = useState(0);
   const [prompts, setPromptControls] = useControls("AI direction", () => ({
     variantA: { label: "Variation one", value: "", rows: 5 },
     variantB: { label: "Variation two", value: "", rows: 5 },
@@ -157,6 +158,37 @@ function Booth() {
     reset(true);
   };
 
+  const runDemoSequence = async () => {
+    if (mode !== "every.one.in") return;
+    await resetSession(sessionId).catch(() => {});
+    setResult(null);
+    setError("");
+    for (let index = 1; index <= 12; index += 1) {
+      try {
+        setDemoProgress(index);
+        const frame = await fetch(`/test-frames/frame-${String(index).padStart(2, "0")}.jpg`).then((response) => {
+          if (!response.ok) throw new Error(`Test frame ${index} is unavailable.`);
+          return response.blob();
+        });
+        const preview = URL.createObjectURL(frame);
+        setOriginalPhoto((previous) => {
+          if (previous) URL.revokeObjectURL(previous);
+          return preview;
+        });
+        setPhase("processing");
+        const response = await submitPhoto(frame, { mode, sessionId, oracleContext: {}, designerOptions, prompts });
+        const output = response.output;
+        setResult({ variantA: output.variantA || output.past, variantB: output.variantB || output.future, photoId: output.photoId, mode: output.mode, groupCount: output.groupCount, oracle: output.oracle });
+        setPhase("results");
+      } catch (requestError) {
+        setError(requestError.message);
+        setPhase("error");
+        break;
+      }
+    }
+    setDemoProgress(0);
+  };
+
   const startCountdown = () => {
     captureStartedRef.current = false;
     setCount(appConfig.countdownSeconds);
@@ -212,7 +244,7 @@ function Booth() {
     <main className={`booth booth--${phase} booth--mode-${mode.replaceAll(".", "-")}`} data-testid="booth">
       <Camera ref={cameraRef} visible={phase !== "results"} onStatusChange={setCameraStatus} />
       <KioskChrome phase={phase} cameraStatus={cameraStatus} />
-      <DeveloperModeMenu modes={experience.modes || defaultExperience.modes} mode={mode} onModeChange={handleModeChange} onReset={handleDeveloperReset} oracleContext={oracleContext} onOracleContextChange={(patch) => setOracleContext((current) => ({ ...current, ...patch }))} />
+      <DeveloperModeMenu modes={experience.modes || defaultExperience.modes} mode={mode} onModeChange={handleModeChange} onReset={handleDeveloperReset} onRunDemo={runDemoSequence} demoProgress={demoProgress} oracleContext={oracleContext} onOracleContextChange={(patch) => setOracleContext((current) => ({ ...current, ...patch }))} />
       {mode === "branded.posthog" && <PosthogDesktop />}
 
       {phase === "attract" && (

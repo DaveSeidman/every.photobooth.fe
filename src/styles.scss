@@ -126,6 +126,9 @@ em { font-family: var(--serif); font-weight: 400; }
 .developer-menu__oracle label { display:block; margin: 5px 0; color: var(--yellow); }
 .developer-menu__reset { width: 100%; margin-top: 4px; border: 1px solid var(--coral); padding: 8px; color: var(--coral); background: transparent; font: 10px var(--mono); text-transform: uppercase; cursor: pointer; }
 .developer-menu__reset:hover { color: var(--ink); background: var(--coral); }
+.developer-menu__demo { width: 100%; margin-top: 7px; border: 1px solid var(--cyan); padding: 8px; color: var(--cyan); background: transparent; font: 10px var(--mono); text-transform: uppercase; cursor: pointer; }
+.developer-menu__demo:hover:not(:disabled) { color: var(--ink); background: var(--cyan); }
+.developer-menu__demo:disabled { opacity: .55; cursor: wait; }
 
 .designer-panel { position: absolute; inset: 0; z-index: 12; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 5vw; align-items: center; padding: 9vh 8vw; color: var(--ink); background: var(--paper); }
 .designer-panel__preview { position: relative; aspect-ratio: 4 / 5; max-height: 72vh; overflow: hidden; display: grid; place-items: center; background: var(--blue); }
