@@ -57,6 +57,6 @@ In local development, the top-right Creative lab menu switches between:
 
 The selector is developer-only by default (`import.meta.env.DEV`). Set `VITE_SHOW_DEV_MENU=true` to expose it in a preview build.
 
-## Deploy on Render (free)
+## Deploy on GitHub Pages
 
-Create a Static Site from this repository using the included `render.yaml`. After the backend Web Service is created, set `VITE_API_URL` to its Render URL (for example, `https://every-photobooth-backend.onrender.com`) and redeploy the static site. `VITE_SHOW_DEV_MENU=true` keeps the Creative Lab selector visible for client review; set it to `false` for a guest-facing build.
+The included GitHub Actions workflow publishes the Vite build to Pages on every push to `main`. In the repository settings, enable Pages with **GitHub Actions** as the source, then add a repository variable (or secret) named `VITE_API_URL` containing the Render backend URL, such as `https://every-photobooth-backend.onrender.com`. The workflow uses the `/every.photobooth.fe/` project-pages base path and keeps `VITE_SHOW_DEV_MENU=true` for client review.

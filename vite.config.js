@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
+  base: process.env.GITHUB_ACTIONS ? "/every.photobooth.fe/" : "/",
   server: {
     port: 8080,
     strictPort: true,
