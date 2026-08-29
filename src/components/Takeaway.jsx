@@ -7,6 +7,7 @@ export default function Takeaway() {
   const { photoId } = useParams();
   const [sharing, setSharing] = useState(false);
   const [message, setMessage] = useState("");
+  const [mediaUrl, setMediaUrl] = useState(null);
   const stillUrl = photoId ? photoUrl(photoId, "jpg") : null;
   const animationUrl = photoId ? photoUrl(photoId, "gif") : null;
 
@@ -52,7 +53,7 @@ export default function Takeaway() {
     <main className="takeaway">
       <header className="takeaway__header"><span className="takeaway__wordmark">EV<em>E</em>RY</span><span>Thesis: 2027 / {photoId.slice(-6)}</span></header>
       <div className="takeaway__image-wrap">
-        <img src={stillUrl} alt="Your completed three-image portrait strip" />
+        <img src={mediaUrl || animationUrl} onError={() => setMediaUrl(stillUrl)} alt="Your completed animated portrait" />
       </div>
       <section className="takeaway__copy">
         <p className="eyebrow">Portrait study / complete</p>
