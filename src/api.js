@@ -31,9 +31,13 @@ export async function submitPhoto(photo, { prompts, mode = "thesis.editorial", s
   form.append("photo", photo, "photo.jpg");
   form.append("mode", mode);
   form.append("sessionId", sessionId || "local-booth");
-  form.append("variantAPrompt", prompts.variantA);
-  form.append("variantBPrompt", prompts.variantB);
-  form.append("transitionPrompt", prompts.transition);
+  // Mode-specific art direction is owned by the backend. Only send the
+  // editable Thesis prompts for the default experience.
+  if (mode === "thesis.editorial") {
+    form.append("variantAPrompt", prompts.variantA);
+    form.append("variantBPrompt", prompts.variantB);
+    form.append("transitionPrompt", prompts.transition);
+  }
   form.append("oracleContext", JSON.stringify(oracleContext || {}));
   form.append("designerOptions", JSON.stringify(designerOptions || {}));
 

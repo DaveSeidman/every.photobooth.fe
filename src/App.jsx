@@ -176,6 +176,37 @@ function Booth() {
   };
 
   const showCaptureControls = phase === "camera" || phase === "error";
+  const modeCopy = {
+    "every.one.in": {
+      eyebrow: "Every One In / cumulative portrait",
+      title: <>The room<br /><em>remembers.</em></>,
+      intro: "Each new capture joins everyone who came before. The latest people stay in the middle; the room squeezes in around them.",
+      note: "Every person becomes part of the next portrait.",
+    },
+    "every.oracle": {
+      eyebrow: "Every Oracle / contextual portrait",
+      title: <>A portrait<br /><em>with signals.</em></>,
+      intro: "A few volunteered details become subtle visual clues—enough to feel personal, never invasive.",
+      note: "Context, carefully used.",
+    },
+    "every.designer": {
+      eyebrow: "Every Designer / directed portrait",
+      title: <>Direct<br /><em>the image.</em></>,
+      intro: "Place the mark, choose the color, then let the editor turn your gesture into a print.",
+      note: "A little authorship before the machine takes over.",
+    },
+    "branded.posthog": {
+      eyebrow: "Branded / PostHog",
+      title: <>Capture the<br /><em>event.</em></>,
+      intro: "A sponsor-ready portrait station with an analytics-native skin and a little product magic.",
+      note: "Observe. Transform. Share.",
+    },
+  }[mode] || {
+    eyebrow: appConfig.kicker,
+    title: <>Portraits<br /><em>after automation.</em></>,
+    intro: "Step into the Thesis portrait studio. One photograph becomes two high-contrast, screenprinted futures. Print edition coming soon.",
+    note: "Thursday, November 5, 2026 ✳ Pioneer Works, Brooklyn",
+  };
 
   return (
     <main className={`booth booth--${phase} booth--mode-${mode.replaceAll(".", "-")}`} data-testid="booth">
@@ -187,13 +218,13 @@ function Booth() {
       {phase === "attract" && (
         <section className="attract-panel">
           <div className="attract-panel__copy">
-            <p className="eyebrow">{appConfig.kicker}</p>
-            <h1><span>Portraits</span><em>after automation.</em></h1>
-            <p className="attract-panel__intro">Step into the Thesis portrait studio. One photograph becomes two high-contrast, screenprinted futures. Print edition coming soon.</p>
+            <p className="eyebrow">{modeCopy.eyebrow}</p>
+            <h1>{modeCopy.title}</h1>
+            <p className="attract-panel__intro">{modeCopy.intro}</p>
             <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
               Make your portrait <span>↗</span>
             </button>
-            <p className="attract-panel__note">Thursday, November 5, 2026&nbsp;&nbsp;✳&nbsp;&nbsp;Pioneer Works, Brooklyn</p>
+            <p className="attract-panel__note">{modeCopy.note}</p>
           </div>
           <aside className="thesis-poster" aria-hidden="true">
             <div className="thesis-poster__swash" />
