@@ -44,3 +44,15 @@ The fastest adaptation points for a future event are:
 - variant labels and AI prompts served by the backend
 
 No Halloween video, DeLorean artwork, fonts, or deployment URLs were copied into this repository.
+
+## Creative lab modes
+
+In local development, the top-right Creative lab menu switches between:
+
+- `thesis.editorial` — the standard two-variant Thesis portrait.
+- `every.one.in` — an in-memory cumulative group portrait. Each capture feeds the previous group back as a reference so the newest people sit in the middle while the room closes in around them. Reset memory between runs.
+- `every.oracle` — accepts a small, consented context payload (city, industry, role) and turns it into subtle visual motifs; it does not fetch LinkedIn data.
+- `every.designer` — lets the developer place a color/brush accent before sending the image to the editor.
+- `branded.posthog` — a sponsor skin inspired by analytics dashboards and desktop operating systems.
+
+The selector is developer-only by default (`import.meta.env.DEV`). Set `VITE_SHOW_DEV_MENU=true` to expose it in a preview build.

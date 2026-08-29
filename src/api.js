@@ -15,6 +15,7 @@ export async function fetchExperience() {
     return {
       ...defaultExperience,
       ...payload,
+      modes: payload.modes || defaultExperience.modes,
       labels: { ...defaultExperience.labels, ...payload.labels },
       prompts: { ...defaultExperience.prompts, ...payload.prompts },
       features: { ...defaultExperience.features, ...payload.features },
@@ -25,16 +26,29 @@ export async function fetchExperience() {
   }
 }
 
-export async function submitPhoto(photo, prompts) {
+export async function submitPhoto(photo, { prompts, mode = "thesis.editorial", sessionId, oracleContext, designerOptions } = {}) {
   const form = new FormData();
   form.append("photo", photo, "photo.jpg");
+  form.append("mode", mode);
+  form.append("sessionId", sessionId || "local-booth");
   form.append("variantAPrompt", prompts.variantA);
   form.append("variantBPrompt", prompts.variantB);
   form.append("transitionPrompt", prompts.transition);
+  form.append("oracleContext", JSON.stringify(oracleContext || {}));
+  form.append("designerOptions", JSON.stringify(designerOptions || {}));
 
   const response = await fetch(`${appConfig.apiUrl}/submit`, {
     method: "POST",
     body: form,
+  });
+  return parseResponse(response);
+}
+
+export async function resetSession(sessionId) {
+  const response = await fetch(`${appConfig.apiUrl}/sessions/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
   });
   return parseResponse(response);
 }

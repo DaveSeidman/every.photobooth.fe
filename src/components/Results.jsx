@@ -18,6 +18,8 @@ export default function Results({ result, originalPhoto, labels, onReset }) {
         <p className="eyebrow">Portrait study / complete</p>
         <h1 id="results-title">One human.<br /><em>Two futures.</em></h1>
       </div>
+      {result.mode === "every.one.in" && <p className="results__memory-note">The room remembers {result.groupCount || 1} {result.groupCount === 1 ? "person" : "people"}.</p>}
+      {result.mode === "every.oracle" && <p className="results__memory-note">A little context, carefully used.</p>}
       <div className="results__grid">
         <PhotoCard src={result.variantA} label={labels.variantA} kind="blue" />
         <PhotoCard src={originalPhoto} label={labels.original} kind="source" delay={100} />

@@ -27,4 +27,11 @@ export const defaultExperience = {
     animation: true,
     print: false,
   },
+  modes: [
+    { id: "thesis.editorial", label: "Thesis editorial", description: "Blue/coral screenprinted portrait studies.", color: "#2B83EE", developerOnly: false },
+    { id: "every.one.in", label: "Every One In", description: "A cumulative group portrait that remembers the room.", color: "#FF7B70", developerOnly: true },
+    { id: "every.oracle", label: "Every Oracle", description: "A consent-safe portrait with subtle attendee signals.", color: "#31C8F5", developerOnly: true },
+    { id: "every.designer", label: "Every Designer", description: "A guest-adjustable print composition.", color: "#FFDE3D", developerOnly: true },
+    { id: "branded.posthog", label: "Branded / PostHog", description: "A sponsor skin inspired by product analytics.", color: "#F59E0B", developerOnly: true },
+  ],
 };

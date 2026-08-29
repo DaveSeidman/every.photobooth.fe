@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import { Leva, useControls } from "leva";
-import { fetchExperience, submitPhoto } from "./api.js";
+import { fetchExperience, resetSession, submitPhoto } from "./api.js";
 import { appConfig, defaultExperience } from "./config.js";
 import Camera from "./components/Camera.jsx";
 import KioskChrome from "./components/KioskChrome.jsx";
 import Results from "./components/Results.jsx";
 import Takeaway from "./components/Takeaway.jsx";
+import DeveloperModeMenu from "./components/DeveloperModeMenu.jsx";
+import DesignerPanel from "./components/DesignerPanel.jsx";
+import PosthogDesktop from "./components/PosthogDesktop.jsx";
 
 function Booth() {
   const cameraRef = useRef(null);
@@ -20,6 +23,17 @@ function Booth() {
   const [error, setError] = useState("");
   const [controlsVisible, setControlsVisible] = useState(false);
   const [experience, setExperience] = useState(defaultExperience);
+  const [mode, setMode] = useState(() => localStorage.getItem("every.photobooth.mode") || "thesis.editorial");
+  const [sessionId] = useState(() => {
+    const existing = localStorage.getItem("every.photobooth.session");
+    if (existing) return existing;
+    const next = `booth-${crypto.randomUUID()}`;
+    localStorage.setItem("every.photobooth.session", next);
+    return next;
+  });
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [oracleContext, setOracleContext] = useState({ city: "", industry: "", role: "" });
+  const [designerOptions, setDesignerOptions] = useState({ palette: "blue", brushX: 50, brushY: 50, texture: "coarse" });
   const [prompts, setPromptControls] = useControls("AI direction", () => ({
     variantA: { label: "Variation one", value: "", rows: 5 },
     variantB: { label: "Variation two", value: "", rows: 5 },
@@ -29,6 +43,10 @@ function Booth() {
   useEffect(() => {
     fetchExperience().then((nextExperience) => {
       setExperience(nextExperience);
+      if (nextExperience.modes?.length) {
+        const knownMode = nextExperience.modes.some((candidate) => candidate.id === mode);
+        if (!knownMode) setMode("thesis.editorial");
+      }
       setPromptControls(nextExperience.prompts);
     });
   }, [setPromptControls]);
@@ -38,28 +56,38 @@ function Booth() {
     resetTimerRef.current = null;
   };
 
-  const reset = useCallback(() => {
+  const reset = useCallback((toAttract = false) => {
     clearResetTimer();
     if (originalPhoto) URL.revokeObjectURL(originalPhoto);
     setOriginalPhoto(null);
     setResult(null);
+    setPendingPhoto(null);
     setError("");
     setCount(appConfig.countdownSeconds);
     captureStartedRef.current = false;
-    setPhase("camera");
+    setPhase(toAttract ? "attract" : "camera");
   }, [originalPhoto]);
 
-  const processPhoto = useCallback(async (blob) => {
-    const localUrl = URL.createObjectURL(blob);
-    setOriginalPhoto(localUrl);
+  const processPhoto = useCallback(async (blob, options = {}) => {
+    if (!originalPhoto) setOriginalPhoto(URL.createObjectURL(blob));
+    setPendingPhoto(null);
     setPhase("processing");
     try {
-      const response = await submitPhoto(blob, prompts);
+      const response = await submitPhoto(blob, {
+        prompts,
+        mode,
+        sessionId,
+        oracleContext,
+        designerOptions: options.designerOptions || designerOptions,
+      });
       const output = response.output;
       setResult({
         variantA: output.variantA || output.past,
         variantB: output.variantB || output.future,
         photoId: output.photoId,
+        mode: output.mode,
+        groupCount: output.groupCount,
+        oracle: output.oracle,
       });
       setPhase("results");
       resetTimerRef.current = window.setTimeout(reset, appConfig.resetDelayMs);
@@ -67,7 +95,7 @@ function Booth() {
       setError(requestError.message);
       setPhase("error");
     }
-  }, [prompts, reset]);
+  }, [designerOptions, mode, oracleContext, originalPhoto, prompts, reset, sessionId]);
 
   useEffect(() => {
     if (phase !== "countdown") return undefined;
@@ -78,13 +106,21 @@ function Booth() {
     if (captureStartedRef.current) return undefined;
     captureStartedRef.current = true;
     cameraRef.current.capture()
-      .then(processPhoto)
+      .then((blob) => {
+        if (mode === "every.designer") {
+          setOriginalPhoto(URL.createObjectURL(blob));
+          setPendingPhoto(blob);
+          setPhase("designer");
+          return;
+        }
+        processPhoto(blob);
+      })
       .catch((captureError) => {
         setError(captureError.message);
         setPhase("error");
       });
     return undefined;
-  }, [phase, count, processPhoto]);
+  }, [mode, phase, count, processPhoto]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -110,6 +146,17 @@ function Booth() {
     }
   };
 
+  const handleModeChange = (nextMode) => {
+    localStorage.setItem("every.photobooth.mode", nextMode);
+    setMode(nextMode);
+    reset(true);
+  };
+
+  const handleDeveloperReset = async () => {
+    await resetSession(sessionId).catch(() => {});
+    reset(true);
+  };
+
   const startCountdown = () => {
     captureStartedRef.current = false;
     setCount(appConfig.countdownSeconds);
@@ -118,16 +165,24 @@ function Booth() {
 
   const choosePhoto = (event) => {
     const file = event.target.files?.[0];
-    if (file) processPhoto(file);
+    if (file) {
+      if (mode === "every.designer") {
+        setOriginalPhoto(URL.createObjectURL(file));
+        setPendingPhoto(file);
+        setPhase("designer");
+      } else processPhoto(file);
+    }
     event.target.value = "";
   };
 
   const showCaptureControls = phase === "camera" || phase === "error";
 
   return (
-    <main className={`booth booth--${phase}`} data-testid="booth">
+    <main className={`booth booth--${phase} booth--mode-${mode.replaceAll(".", "-")}`} data-testid="booth">
       <Camera ref={cameraRef} visible={phase !== "results"} onStatusChange={setCameraStatus} />
       <KioskChrome phase={phase} cameraStatus={cameraStatus} />
+      <DeveloperModeMenu modes={experience.modes || defaultExperience.modes} mode={mode} onModeChange={handleModeChange} onReset={handleDeveloperReset} oracleContext={oracleContext} onOracleContextChange={(patch) => setOracleContext((current) => ({ ...current, ...patch }))} />
+      {mode === "branded.posthog" && <PosthogDesktop />}
 
       {phase === "attract" && (
         <section className="attract-panel">
@@ -169,6 +224,10 @@ function Booth() {
         </section>
       )}
 
+      {phase === "designer" && originalPhoto && pendingPhoto && (
+        <DesignerPanel preview={originalPhoto} options={designerOptions} onChange={(patch) => setDesignerOptions((current) => ({ ...current, ...patch }))} onSubmit={() => processPhoto(pendingPhoto, { designerOptions })} onBack={() => { setPendingPhoto(null); setPhase("camera"); }} />
+      )}
+
       {phase === "countdown" && (
         <section className="countdown" aria-live="assertive">
           <p>Hold the thesis</p>
@@ -185,7 +244,7 @@ function Booth() {
       )}
 
       {phase === "results" && result && (
-        <Results result={result} originalPhoto={originalPhoto} labels={experience.labels} onReset={reset} />
+        <Results result={result} originalPhoto={originalPhoto} labels={experience.labels} onReset={() => reset(true)} />
       )}
 
       <Leva hidden={!controlsVisible} collapsed={false} titleBar={{ title: "Experience controls" }} />
