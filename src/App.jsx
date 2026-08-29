@@ -134,7 +134,7 @@ function Booth() {
           <div className="attract-panel__copy">
             <p className="eyebrow">{appConfig.kicker}</p>
             <h1><span>Portraits</span><em>after automation.</em></h1>
-            <p className="attract-panel__intro">Step into the Thesis portrait studio. One photograph becomes two high-contrast, screenprinted futures.</p>
+            <p className="attract-panel__intro">Step into the Thesis portrait studio. One photograph becomes two high-contrast, screenprinted futures. Print edition coming soon.</p>
             <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
               Make your portrait <span>↗</span>
             </button>

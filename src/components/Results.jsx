@@ -28,6 +28,7 @@ export default function Results({ result, originalPhoto, labels, onReset }) {
           <div>
             <p className="eyebrow">Your takeaway</p>
             <h2>Scan to save<br /><em>the thesis.</em></h2>
+            <p className="share-card__print-note">Print edition coming soon.</p>
           </div>
           <button type="button" className="text-button" onClick={onReset}>Start again <span>↗</span></button>
         </aside>
