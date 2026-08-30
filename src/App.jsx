@@ -12,6 +12,7 @@ import DeveloperModeMenu from "./components/DeveloperModeMenu.jsx";
 import DesignerPanel from "./components/DesignerPanel.jsx";
 import PosthogDesktop from "./components/PosthogDesktop.jsx";
 import FutureChoice from "./components/FutureChoice.jsx";
+import MarkerMagic from "./components/MarkerMagic.jsx";
 
 function Booth() {
   const cameraRef = useRef(null);
@@ -193,11 +194,11 @@ function Booth() {
     setDemoProgress(0);
   };
 
-  const startCountdown = () => {
+  const startCountdown = useCallback(() => {
     captureStartedRef.current = false;
     setCount(appConfig.countdownSeconds);
     setPhase("countdown");
-  };
+  }, []);
 
   const choosePhoto = (event) => {
     const file = event.target.files?.[0];
@@ -253,6 +254,7 @@ function Booth() {
   return (
     <main className={`booth booth--${phase} booth--mode-${mode.replaceAll(".", "-")}`} data-testid="booth">
       <Camera ref={cameraRef} visible={phase !== "results"} onStatusChange={setCameraStatus} />
+      <MarkerMagic active={mode === "every.future.familiar" && phase === "camera"} choice={futureChoice} onAutoCapture={startCountdown} />
       <KioskChrome phase={phase} cameraStatus={cameraStatus} />
       <DeveloperModeMenu modes={experience.modes || defaultExperience.modes} mode={mode} onModeChange={handleModeChange} onReset={handleDeveloperReset} onRunDemo={runDemoSequence} demoProgress={demoProgress} oracleContext={oracleContext} onOracleContextChange={(patch) => setOracleContext((current) => ({ ...current, ...patch }))} />
       {mode === "branded.posthog" && <PosthogDesktop />}
