@@ -14,6 +14,13 @@ import PosthogDesktop from "./components/PosthogDesktop.jsx";
 import FutureChoice from "./components/FutureChoice.jsx";
 import MarkerMagic from "./components/MarkerMagic.jsx";
 
+const createSessionId = () => {
+  // `crypto.randomUUID()` is unavailable on some phones when the booth is
+  // opened over an http:// LAN address. Keep the QR flow usable there.
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `booth-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 function Booth() {
   const cameraRef = useRef(null);
   const resetTimerRef = useRef(null);
@@ -30,7 +37,7 @@ function Booth() {
   const [sessionId] = useState(() => {
     const existing = localStorage.getItem("every.photobooth.session");
     if (existing) return existing;
-    const next = `booth-${crypto.randomUUID()}`;
+    const next = createSessionId();
     localStorage.setItem("every.photobooth.session", next);
     return next;
   });
