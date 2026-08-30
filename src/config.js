@@ -33,5 +33,6 @@ export const defaultExperience = {
     { id: "every.oracle", label: "Every Oracle", description: "A consent-safe portrait with subtle attendee signals.", color: "#31C8F5", developerOnly: true },
     { id: "every.designer", label: "Every Designer", description: "A guest-adjustable print composition.", color: "#FFDE3D", developerOnly: true },
     { id: "branded.posthog", label: "Branded / PostHog", description: "A sponsor skin inspired by product analytics.", color: "#F59E0B", developerOnly: true },
+    { id: "every.future.familiar", label: "Every Future Familiar", description: "Your chosen future escapes from your phone as a living symbol.", color: "#A8F0D0", developerOnly: true },
   ],
 };

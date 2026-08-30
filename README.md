@@ -54,6 +54,7 @@ In local development, the top-right Creative lab menu switches between:
 - `every.oracle` — accepts a small, consented context payload (city, industry, role) and turns it into subtle visual motifs; it does not fetch LinkedIn data.
 - `every.designer` — lets the developer place a color/brush accent before sending the image to the editor.
 - `branded.posthog` — a sponsor skin inspired by analytics dashboards and desktop operating systems.
+- `every.future.familiar` — a QR-led choice where a builder, designer, or inventor familiar escapes each phone into the portrait.
 
 The selector is developer-only by default (`import.meta.env.DEV`). Set `VITE_SHOW_DEV_MENU=true` to expose it in a preview build.
 

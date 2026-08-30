@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import { Leva, useControls } from "leva";
 import { fetchExperience, resetSession, submitPhoto } from "./api.js";
@@ -10,6 +11,7 @@ import Takeaway from "./components/Takeaway.jsx";
 import DeveloperModeMenu from "./components/DeveloperModeMenu.jsx";
 import DesignerPanel from "./components/DesignerPanel.jsx";
 import PosthogDesktop from "./components/PosthogDesktop.jsx";
+import FutureChoice from "./components/FutureChoice.jsx";
 
 function Booth() {
   const cameraRef = useRef(null);
@@ -34,6 +36,7 @@ function Booth() {
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [oracleContext, setOracleContext] = useState({ city: "", industry: "", role: "" });
   const [designerOptions, setDesignerOptions] = useState({ palette: "blue", brushX: 50, brushY: 50, texture: "coarse" });
+  const [futureChoice, setFutureChoice] = useState(() => localStorage.getItem("every.photobooth.choice") || "builder");
   const [demoProgress, setDemoProgress] = useState(0);
   const [prompts, setPromptControls] = useControls("AI direction", () => ({
     variantA: { label: "Variation one", value: "", rows: 5 },
@@ -80,6 +83,7 @@ function Booth() {
         sessionId,
         oracleContext,
         designerOptions: options.designerOptions || designerOptions,
+        futureChoice,
       });
       const output = response.output;
       setResult({
@@ -96,7 +100,7 @@ function Booth() {
       setError(requestError.message);
       setPhase("error");
     }
-  }, [designerOptions, mode, oracleContext, originalPhoto, prompts, reset, sessionId]);
+  }, [designerOptions, futureChoice, mode, oracleContext, originalPhoto, prompts, reset, sessionId]);
 
   useEffect(() => {
     if (phase !== "countdown") return undefined;
@@ -233,6 +237,12 @@ function Booth() {
       intro: "A sponsor-ready portrait station with an analytics-native skin and a little product magic.",
       note: "Observe. Transform. Share.",
     },
+    "every.future.familiar": {
+      eyebrow: "Every Future Familiar / phone-powered portrait",
+      title: <>Bring your<br /><em>future with you.</em></>,
+      intro: "Choose a future on your phone, then hold it up. A little creature will escape the screen and dance through the photograph.",
+      note: "Scan to choose your familiar before you enter.",
+    },
   }[mode] || {
     eyebrow: appConfig.kicker,
     title: <>Portraits<br /><em>after automation.</em></>,
@@ -256,6 +266,7 @@ function Booth() {
             <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
               Make your portrait <span>↗</span>
             </button>
+            {mode === "every.future.familiar" && <div className="future-choice__qr"><QRCodeSVG value={`${appConfig.publicAppUrl}/#/choose/${sessionId}`} size={116} level="M" /><span>Scan / choose your future</span></div>}
             <p className="attract-panel__note">{modeCopy.note}</p>
           </div>
           <aside className="thesis-poster" aria-hidden="true">
@@ -270,7 +281,7 @@ function Booth() {
       {showCaptureControls && (
         <section className="capture-panel">
           <div>
-            <p className="eyebrow">Thesis portrait study / 001</p>
+            <p className="eyebrow">{mode === "every.future.familiar" ? `Future Familiar / ${futureChoice}` : "Thesis portrait study / 001"}</p>
             <h1>{cameraStatus === "ready" ? <>Frame <em>the human.</em></> : "Camera setup."}</h1>
             {error && <p className="error-message" role="alert">{error}</p>}
           </div>
@@ -321,6 +332,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Booth />} />
         <Route path="/takeaway/:photoId?" element={<Takeaway />} />
+        <Route path="/choose/:sessionId?" element={<FutureChoice />} />
       </Routes>
     </HashRouter>
   );

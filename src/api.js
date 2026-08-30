@@ -26,7 +26,7 @@ export async function fetchExperience() {
   }
 }
 
-export async function submitPhoto(photo, { prompts, mode = "thesis.editorial", sessionId, oracleContext, designerOptions } = {}) {
+export async function submitPhoto(photo, { prompts, mode = "thesis.editorial", sessionId, oracleContext, designerOptions, futureChoice } = {}) {
   const form = new FormData();
   form.append("photo", photo, "photo.jpg");
   form.append("mode", mode);
@@ -40,6 +40,7 @@ export async function submitPhoto(photo, { prompts, mode = "thesis.editorial", s
   }
   form.append("oracleContext", JSON.stringify(oracleContext || {}));
   form.append("designerOptions", JSON.stringify(designerOptions || {}));
+  form.append("futureChoice", futureChoice || "builder");
 
   const response = await fetch(`${appConfig.apiUrl}/submit`, {
     method: "POST",
