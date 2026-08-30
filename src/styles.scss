@@ -167,6 +167,8 @@ em { font-family: var(--serif); font-weight: 400; }
 .future-choice__options button:hover,.future-choice__options button.is-selected { color:var(--paper); background:var(--ink); }
 .future-choice__options button span { color:var(--coral); font:italic 28px var(--serif); }
 .future-choice__options button i { align-self:flex-end; font-style:normal; }
+.future-choice__confirmation { max-width: 620px; margin-top: 28px; padding: 16px 18px; border-left: 4px solid var(--coral); color: var(--ink); background: var(--paper-deep); font: 500 13px/1.5 var(--mono); }
+.future-choice__confirmation strong { color: var(--blue); text-transform: uppercase; }
 .future-choice__qr { display:flex; align-items:center; gap:12px; margin-top:28px; font:10px var(--mono); text-transform:uppercase; letter-spacing:.08em; }
 .future-choice__qr svg { padding:8px; background:white; }
 .marker-magic__canvas { position:absolute; inset:0; z-index:4; width:100%; height:100%; pointer-events:none; image-rendering:auto; }
