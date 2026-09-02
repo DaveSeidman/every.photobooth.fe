@@ -7,21 +7,15 @@ export default function Takeaway() {
   const { photoId } = useParams();
   const [sharing, setSharing] = useState(false);
   const [message, setMessage] = useState("");
-  const [mediaUrl, setMediaUrl] = useState(null);
   const stillUrl = photoId ? photoUrl(photoId, "jpg") : null;
-  const animationUrl = photoId ? photoUrl(photoId, "gif") : null;
 
   const share = async () => {
     if (!photoId) return;
     setSharing(true);
     setMessage("");
     try {
-      let response = await fetch(animationUrl);
-      let extension = "gif";
-      if (!response.ok) {
-        response = await fetch(stillUrl);
-        extension = "jpg";
-      }
+      const response = await fetch(stillUrl);
+      const extension = "jpg";
       if (!response.ok) throw new Error("Your image is still being prepared.");
       const blob = await response.blob();
       const file = new File([blob], `every-portrait-${photoId}.${extension}`, { type: blob.type });
@@ -53,12 +47,12 @@ export default function Takeaway() {
     <main className="takeaway">
       <header className="takeaway__header"><span className="takeaway__wordmark">EV<em>E</em>RY</span><span>Thesis: 2027 / {photoId.slice(-6)}</span></header>
       <div className="takeaway__image-wrap">
-        <img src={mediaUrl || animationUrl} onError={() => setMediaUrl(stillUrl)} alt="Your completed animated portrait" />
+        <img src={stillUrl} alt="Your completed styled portrait" />
       </div>
       <section className="takeaway__copy">
         <p className="eyebrow">Portrait study / complete</p>
         <h1>Keep the<br /><em>thesis.</em></h1>
-        <p>Save the animated screenprint to your phone, or open your share sheet to send it on.</p>
+        <p>Save the styled portrait to your phone, or open your share sheet to send it on.</p>
         <button type="button" className="primary-button" onClick={share} disabled={sharing}>
           {sharing ? "Preparing…" : "Save or share"}<span>↓</span>
         </button>

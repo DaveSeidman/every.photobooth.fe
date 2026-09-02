@@ -24,10 +24,14 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Verify production API URL
+        run: test -n "$VITE_API_URL"
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
-          VITE_SHOW_DEV_MENU: "true"
+          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

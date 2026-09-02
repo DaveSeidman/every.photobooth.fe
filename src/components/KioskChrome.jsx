@@ -3,6 +3,9 @@ export default function KioskChrome({ phase, cameraStatus }) {
     attract: "Waiting",
     camera: cameraStatus === "ready" ? "Camera ready" : "Camera setup",
     countdown: "Hold still",
+    flash: "Captured",
+    review: "Review photo",
+    styles: "Choose a future",
     processing: "Rendering",
     results: "Complete",
     error: "Needs attention",
@@ -12,7 +15,7 @@ export default function KioskChrome({ phase, cameraStatus }) {
     <div className="chrome" aria-hidden="true">
       <div className="chrome__wordmark">EV<em>E</em>RY</div>
       <div className="chrome__status"><span>✳</span>{statusLabel}</div>
-      <div className="chrome__mark">THESIS: 2027 / PORTRAIT 001</div>
+      <div className="chrome__mark">THESIS: 2027 / EVERY PORTRAIT</div>
     </div>
   );
 }
