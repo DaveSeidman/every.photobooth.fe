@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 import { fetchExperience, photoUrl, submitPhoto } from "./api.js";
 import { appConfig, defaultExperience } from "./config.js";
 import Camera from "./components/Camera.jsx";
@@ -254,11 +254,27 @@ function Booth() {
   );
 }
 
+function HandoffPreview() {
+  const { photoId } = useParams();
+  const result = {
+    photoId,
+    styled: photoUrl(photoId),
+    styleLabel: "Future of Work",
+  };
+
+  return (
+    <main className="booth booth--results booth--mode-every">
+      <Results result={result} onReset={() => { window.location.hash = "/"; }} />
+    </main>
+  );
+}
+
 export default function App() {
   return (
     <HashRouter>
       <Routes>
         <Route path="/" element={<Booth />} />
+        <Route path="/handoff/:photoId" element={<HandoffPreview />} />
         <Route path="/takeaway/:photoId?" element={<Takeaway />} />
       </Routes>
     </HashRouter>

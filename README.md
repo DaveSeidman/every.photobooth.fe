@@ -20,7 +20,7 @@ Open `http://localhost:8080` for camera access. When `VITE_API_URL` is omitted, 
 
 Both dev servers bind to `0.0.0.0`. The phone uses ordinary HTTP and `ws://` on the local network; the deployed GitHub Pages app uses HTTPS and `wss://` automatically.
 
-The backend receives the camera portrait and selected style. The results page shows the completed notched portrait and a QR takeaway link. When the phone opens that link, the booth and phone join a photo-specific WebSocket room: portrait dragging is mirrored live, and **Download photo** triggers one synchronized booth-to-phone animation. The phone does not reveal the portrait until the handoff begins. Printing remains a coming-soon message.
+The backend receives the camera portrait and selected style. The results page shows the completed notched portrait and a QR takeaway link. When the phone opens that link, the booth and phone join a photo-specific WebSocket room: portrait dragging is mirrored live, and **Send to phone** triggers one synchronized booth-to-phone animation. The phone does not reveal the portrait until the handoff begins. Printing remains a coming-soon message.
 
 ## GitHub Pages
 

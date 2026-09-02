@@ -10,8 +10,8 @@ export default function Results({ result, onReset, onActivity }) {
   const sync = usePhotoSync(result.photoId, "kiosk");
 
   useEffect(() => {
-    if (sync.phoneConnected || sync.moved || sync.transfer) onActivity?.();
-  }, [sync.phoneConnected, sync.moved, sync.transfer?.version, onActivity]);
+    if (sync.phoneConnected || sync.moved || sync.completed) onActivity?.();
+  }, [sync.phoneConnected, sync.moved, sync.completed, onActivity]);
 
   return (
     <section className={`results ${sync.phoneConnected ? "results--phone-connected" : ""}`} aria-labelledby="results-title">

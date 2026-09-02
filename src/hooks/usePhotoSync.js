@@ -15,12 +15,11 @@ const initialState = {
   phones: 0,
   kiosks: 0,
   cards: {
-    original: { x: 0.7, y: 0.3 },
-    styled: { x: 0.76, y: 0.62 },
+    original: { x: 0.7, y: 0.3, phoneX: 2, phoneY: 0.3, rotation: -3 },
+    styled: { x: 0.76, y: 0.62, phoneX: 2, phoneY: 0.62, rotation: 2 },
   },
   moved: false,
-  transfer: null,
-  clockOffset: 0,
+  completed: null,
   activeCard: null,
 };
 
@@ -54,11 +53,13 @@ export function usePhotoSync(photoId, role) {
         }
         setState((current) => {
           if (message.type === "session") {
+            const sharedSession = role === "phone"
+              ? { phones: message.phones, kiosks: message.kiosks }
+              : { cards: message.cards, moved: message.moved, phones: message.phones, kiosks: message.kiosks };
             return {
               ...current,
-              ...message,
+              ...sharedSession,
               status: "connected",
-              clockOffset: message.serverTime - Date.now(),
             };
           }
           if (message.type === "presence") {
@@ -69,11 +70,20 @@ export function usePhotoSync(photoId, role) {
               ...current,
               moved: true,
               activeCard: message.dragging ? message.card : null,
-              cards: { ...current.cards, [message.card]: { x: message.x, y: message.y } },
+              cards: {
+                ...current.cards,
+                [message.card]: {
+                  x: message.x,
+                  y: message.y,
+                  phoneX: message.phoneX,
+                  phoneY: message.phoneY,
+                  rotation: message.rotation,
+                },
+              },
             };
           }
-          if (message.type === "handoff:transfer") {
-            return { ...current, transfer: { startAt: message.startAt, version: message.version } };
+          if (message.type === "handoff:complete") {
+            return { ...current, completed: message.version };
           }
           return current;
         });
@@ -102,14 +112,24 @@ export function usePhotoSync(photoId, role) {
     }
   }, []);
 
+  const sendCard = useCallback((card, position, dragging = false) => {
+    setState((current) => ({
+      ...current,
+      moved: true,
+      activeCard: dragging ? card : null,
+      cards: { ...current.cards, [card]: position },
+    }));
+    send({ type: "card:move", card, ...position, dragging });
+  }, [send]);
+
+  const completeHandoff = useCallback(() => {
+    send({ type: "handoff:complete" });
+  }, [send]);
+
   return {
     ...state,
     phoneConnected: state.phones > 0,
-    sendCard(card, position, dragging = false) {
-      send({ type: "card:move", card, x: position.x, y: position.y, dragging });
-    },
-    transferPhoto() {
-      send({ type: "handoff:transfer" });
-    },
+    sendCard,
+    completeHandoff,
   };
 }

@@ -180,10 +180,9 @@ em { font-family: var(--serif); font-weight: 400; }
 .handoff-card { position: absolute; z-index: 4; width: clamp(170px, 21vw, 330px); transform: translate(-50%, -50%) rotate(2deg); border: 1px solid var(--ink); padding: 7px 7px 28px; color: var(--ink); background: var(--paper); box-shadow: 8px 10px 0 rgba(10,10,10,.16); cursor: grab; touch-action: none; user-select: none; }
 .handoff-card--original { width: clamp(150px, 17vw, 270px); transform: translate(-50%, -50%) rotate(-3deg); }
 .handoff-card.is-dragging { z-index: 8; cursor: grabbing; box-shadow: 13px 15px 0 var(--coral); }
+.handoff-stage.is-transferring .handoff-card { pointer-events: none; }
 .handoff-card img { display: block; width: 100%; aspect-ratio: 5 / 4; object-fit: cover; pointer-events: none; }
 .handoff-card span { position: absolute; left: 9px; bottom: 7px; font: 500 9px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
-.handoff-card--styled.is-exiting { animation: booth-transfer-left 1.45s cubic-bezier(.62,.02,.2,1) forwards; pointer-events: none; }
-@keyframes booth-transfer-left { to { transform: translate(calc(-120vw - 50%), -50%) rotate(-5deg) scale(.92); } }
 .handoff-transfer { position: absolute; z-index: 7; right: 4%; bottom: 7%; min-width: 240px; display: flex; justify-content: space-between; border: 1px solid var(--ink); padding: 17px 18px; color: var(--paper); background: var(--ink); cursor: pointer; font-weight: 600; }
 .handoff-transfer:hover { color: var(--ink); background: var(--cyan); }
 .handoff-transfer:disabled { opacity: .55; cursor: wait; }
@@ -212,11 +211,10 @@ em { font-family: var(--serif); font-weight: 400; }
 .takeaway-sync__prompt h1 em { color: var(--blue); }
 .takeaway-sync__prompt small { margin-top: 24px; color: rgba(10,10,10,.54); font: 500 9px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .takeaway-sync__mirrors { position: absolute; z-index: 4; inset: 0; overflow: hidden; }
-.takeaway-sync__mirrors img { position: absolute; width: clamp(140px, 32vw, 340px); transform: translate(-50%, -50%); border: 5px solid var(--paper); outline: 1px solid var(--ink); box-shadow: 9px 11px 0 rgba(10,10,10,.18); transition: left .06s linear, top .06s linear; }
+.takeaway-sync__mirrors img { position: absolute; width: clamp(300px, 96vw, 760px); border: 5px solid var(--paper); outline: 1px solid var(--ink); box-shadow: 9px 11px 0 rgba(10,10,10,.18); transition: left .035s linear, top .035s linear; }
+.takeaway-sync__mirrors .takeaway-sync__card--original { width: clamp(260px, 84vw, 640px); }
 .takeaway-sync__mirrors img.is-active { outline: 3px solid var(--coral); }
-.takeaway-sync__arrival { position: absolute; z-index: 5; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--paper); transform: translateX(110%); animation: phone-transfer-in 1.45s cubic-bezier(.62,.02,.2,1) forwards; }
-@keyframes phone-transfer-in { to { transform: translateX(0); } }
-.takeaway-sync__actions { position: absolute; z-index: 7; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; padding: 10px; color: var(--paper); background: var(--ink); animation: reveal .45s ease forwards; }
+.takeaway-sync__actions { position: absolute; z-index: 7; left: 50%; bottom: 24px; width: min(calc(100% - 24px), 520px); box-sizing: border-box; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; color: var(--paper); background: var(--ink); animation: reveal .45s ease forwards; }
 .takeaway-sync__actions p { margin: 0 8px; font: 500 9px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .takeaway-sync__actions .primary-button { min-width: 190px; }
 .takeaway-sync__status { position: absolute; z-index: 8; right: 18px; top: 20px; display: flex; align-items: center; gap: 8px; font: 500 8px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
@@ -294,5 +292,8 @@ em { font-family: var(--serif); font-weight: 400; }
   .handoff-card { width: 42vw; }
   .handoff-card--original { width: 36vw; }
   .handoff-transfer { right: 50%; bottom: 5%; transform: translateX(50%); }
+  .takeaway-sync__actions { right: 12px; bottom: 12px; left: 12px; width: auto; transform: none; flex-direction: column; align-items: stretch; }
+  .takeaway-sync__actions p { margin: 4px 6px; text-align: center; }
+  .takeaway-sync__actions .primary-button { width: 100%; min-width: 0; }
   .developer-menu { top: 12px; right: 12px; width: 190px; }
 }

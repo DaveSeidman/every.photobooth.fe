@@ -8,25 +8,18 @@ export default function Takeaway() {
   const { photoId } = useParams();
   const [sharing, setSharing] = useState(false);
   const [message, setMessage] = useState("");
-  const [transferPhase, setTransferPhase] = useState("waiting");
+  const [arrived, setArrived] = useState(false);
   const stillUrl = photoId ? photoUrl(photoId, "jpg") : null;
   const originalUrl = photoId ? photoUrl(`${photoId}-source`, "jpg") : null;
   const sync = usePhotoSync(photoId, "phone");
 
   useEffect(() => {
-    if (!sync.transfer) return undefined;
-    setTransferPhase("waiting");
-    const delay = Math.max(0, sync.transfer.startAt - (Date.now() + sync.clockOffset));
-    let arrivalTimer;
-    const startTimer = window.setTimeout(() => {
-      setTransferPhase("receiving");
-      arrivalTimer = window.setTimeout(() => setTransferPhase("arrived"), 1450);
-    }, delay);
-    return () => {
-      window.clearTimeout(startTimer);
-      window.clearTimeout(arrivalTimer);
-    };
-  }, [sync.transfer?.version, sync.clockOffset]);
+    setArrived(false);
+  }, [photoId]);
+
+  useEffect(() => {
+    if (sync.completed) setArrived(true);
+  }, [sync.completed]);
 
   const share = async () => {
     if (!photoId) return;
@@ -57,40 +50,42 @@ export default function Takeaway() {
     return <main className="takeaway takeaway--missing"><p>This portrait link is incomplete.</p></main>;
   }
 
-  const receiving = transferPhase === "receiving" || transferPhase === "arrived";
+  const cardStyle = (position) => ({
+    left: `${(position.phoneX ?? position.x) * 100}%`,
+    top: `${(position.phoneY ?? position.y) * 100}%`,
+    transform: `translate(-50%, -50%) rotate(${position.rotation || 0}deg)`,
+  });
 
   return (
-    <main className={`takeaway-sync takeaway-sync--${transferPhase}`}>
+    <main className={`takeaway-sync ${arrived ? "takeaway-sync--arrived" : ""}`}>
       <header className="takeaway-sync__brand">EV<em>E</em>RY <span>✳</span></header>
       <section
-        className={`takeaway-sync__prompt ${sync.moved || receiving ? "is-hidden" : ""}`}
-        aria-hidden={sync.moved || receiving}
+        className={`takeaway-sync__prompt ${sync.moved ? "is-hidden" : ""}`}
+        aria-hidden={sync.moved}
       >
         <p>{sync.status === "connected" ? "Phone and booth connected" : "Connecting to the booth"}</p>
         <h1>Hold your phone up<br /><em>to the screen.</em></h1>
         <small>Keep this page open and hold your phone upright.</small>
       </section>
 
-      {sync.moved && !receiving && (
+      {sync.moved && (
         <div className="takeaway-sync__mirrors" aria-label="Synced portrait positions">
           <img
-            className={sync.activeCard === "original" ? "is-active" : ""}
+            className={`takeaway-sync__card takeaway-sync__card--original ${sync.activeCard === "original" ? "is-active" : ""}`}
             src={originalUrl}
             alt="Original portrait moving with the booth"
-            style={{ left: `${sync.cards.original.x * 100}%`, top: `${sync.cards.original.y * 100}%` }}
+            style={cardStyle(sync.cards.original)}
           />
           <img
-            className={sync.activeCard === "styled" ? "is-active" : ""}
+            className={`takeaway-sync__card takeaway-sync__card--styled ${sync.activeCard === "styled" ? "is-active" : ""}`}
             src={stillUrl}
             alt="Styled portrait moving with the booth"
-            style={{ left: `${sync.cards.styled.x * 100}%`, top: `${sync.cards.styled.y * 100}%` }}
+            style={cardStyle(sync.cards.styled)}
           />
         </div>
       )}
 
-      {receiving && <img className="takeaway-sync__arrival" src={stillUrl} alt="Your portrait arriving from the booth" />}
-
-      {transferPhase === "arrived" && (
+      {arrived && (
         <section className="takeaway-sync__actions">
           <p>Your portrait crossed the screen.</p>
           <button type="button" className="primary-button" onClick={share} disabled={sharing}>
