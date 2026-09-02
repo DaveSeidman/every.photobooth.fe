@@ -161,6 +161,32 @@ em { font-family: var(--serif); font-weight: 400; }
 .share-card__instruction { color: rgba(255,250,244,.68); font-size: 13px; line-height: 1.5; }
 .share-card__print-note { margin: 18px 0 0; color: var(--yellow); font: 500 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
 .text-button { display: flex; justify-content: space-between; border: 0; border-top: 1px solid rgba(255,255,255,.5); padding: 13px 0 0; color: white; background: none; cursor: pointer; }
+.share-card__connection { margin-top: 18px; color: var(--cyan); font: 500 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+
+.results--phone-connected { padding: clamp(48px, 6vh, 74px) clamp(26px, 4vw, 64px) clamp(24px, 3vh, 38px); overflow: hidden; }
+.results--phone-connected .results__heading { margin-bottom: 18px; padding-bottom: 16px; }
+.results--phone-connected .results__heading h1 { font-size: clamp(42px, 5vw, 76px); line-height: .82; }
+.handoff-stage { position: relative; width: 100%; height: min(66vh, 820px); min-height: 460px; overflow: hidden; border: 1px solid rgba(10,10,10,.32); background: repeating-linear-gradient(0deg, rgba(10,10,10,.04) 0 1px, transparent 1px 6px), var(--paper); }
+.handoff-stage::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid rgba(10,10,10,.12); pointer-events: none; }
+.phone-target { position: absolute; z-index: 1; left: 4%; top: 50%; height: min(61vh, 760px); aspect-ratio: 10 / 16; transform: translateY(-50%); display: grid; place-items: center; border: 3px dotted var(--blue); border-radius: clamp(25px, 3vw, 48px); color: var(--blue); background: rgba(43,131,238,.035); }
+.phone-target::after { content: ""; position: absolute; inset: 9px; border: 1px solid rgba(43,131,238,.25); border-radius: inherit; }
+.phone-target__camera { position: absolute; top: 10px; left: 50%; width: 8px; height: 8px; transform: translateX(-50%); border: 1px solid var(--blue); border-radius: 50%; }
+.phone-target div { display: grid; gap: 9px; text-align: center; }
+.phone-target strong { font: 400 clamp(26px, 2.7vw, 44px)/1 var(--serif); }
+.phone-target small { font: 500 9px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.handoff-stage__copy { position: absolute; z-index: 2; top: 7%; right: 4%; width: 37%; text-align: right; pointer-events: none; }
+.handoff-stage__copy h2 { margin: 0; font: 400 clamp(28px, 3vw, 50px)/.95 var(--serif); letter-spacing: -.045em; }
+.handoff-stage__copy h2 em { color: var(--blue); }
+.handoff-card { position: absolute; z-index: 4; width: clamp(170px, 21vw, 330px); transform: translate(-50%, -50%) rotate(2deg); border: 1px solid var(--ink); padding: 7px 7px 28px; color: var(--ink); background: var(--paper); box-shadow: 8px 10px 0 rgba(10,10,10,.16); cursor: grab; touch-action: none; user-select: none; }
+.handoff-card--original { width: clamp(150px, 17vw, 270px); transform: translate(-50%, -50%) rotate(-3deg); }
+.handoff-card.is-dragging { z-index: 8; cursor: grabbing; box-shadow: 13px 15px 0 var(--coral); }
+.handoff-card img { display: block; width: 100%; aspect-ratio: 5 / 4; object-fit: cover; pointer-events: none; }
+.handoff-card span { position: absolute; left: 9px; bottom: 7px; font: 500 9px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.handoff-card--styled.is-exiting { animation: booth-transfer-left 1.45s cubic-bezier(.62,.02,.2,1) forwards; pointer-events: none; }
+@keyframes booth-transfer-left { to { transform: translate(calc(-120vw - 50%), -50%) rotate(-5deg) scale(.92); } }
+.handoff-transfer { position: absolute; z-index: 7; right: 4%; bottom: 7%; min-width: 240px; display: flex; justify-content: space-between; border: 1px solid var(--ink); padding: 17px 18px; color: var(--paper); background: var(--ink); cursor: pointer; font-weight: 600; }
+.handoff-transfer:hover { color: var(--ink); background: var(--cyan); }
+.handoff-transfer:disabled { opacity: .55; cursor: wait; }
 
 .takeaway { width: 100%; height: 100%; overflow-y: auto; color: var(--ink); background: var(--paper); }
 .takeaway__header { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; color: var(--paper); background: var(--ink); font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .12em; }
@@ -174,6 +200,28 @@ em { font-family: var(--serif); font-weight: 400; }
 .takeaway__copy > p:not(.eyebrow):not(.takeaway__message) { max-width: 480px; margin: 28px 0; font-size: 17px; line-height: 1.6; color: rgba(16,21,17,.68); }
 .takeaway__message { color: #a42816; }
 .takeaway--missing { display: grid; place-items: center; }
+
+.takeaway-sync { position: relative; width: 100%; height: 100%; overflow: hidden; color: var(--ink); background: var(--paper); }
+.takeaway-sync::before { content: ""; position: absolute; inset: 0; opacity: .16; background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 5px); pointer-events: none; }
+.takeaway-sync__brand { position: absolute; z-index: 8; top: 20px; left: 24px; color: var(--ink); font: 400 clamp(25px, 4vw, 38px)/1 var(--serif); letter-spacing: -.08em; }
+.takeaway-sync__brand span { margin-left: 12px; color: var(--coral); }
+.takeaway-sync__prompt { position: absolute; z-index: 3; inset: 0; display: grid; place-content: center; justify-items: center; padding: 30px; text-align: center; transition: opacity .25s ease; }
+.takeaway-sync__prompt.is-hidden { opacity: 0; pointer-events: none; }
+.takeaway-sync__prompt p { margin: 0 0 20px; color: var(--blue); font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.takeaway-sync__prompt h1 { margin: 0; font: 400 clamp(44px, 8vw, 88px)/.88 var(--serif); letter-spacing: -.055em; }
+.takeaway-sync__prompt h1 em { color: var(--blue); }
+.takeaway-sync__prompt small { margin-top: 24px; color: rgba(10,10,10,.54); font: 500 9px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.takeaway-sync__mirrors { position: absolute; z-index: 4; inset: 0; overflow: hidden; }
+.takeaway-sync__mirrors img { position: absolute; width: clamp(140px, 32vw, 340px); transform: translate(-50%, -50%); border: 5px solid var(--paper); outline: 1px solid var(--ink); box-shadow: 9px 11px 0 rgba(10,10,10,.18); transition: left .06s linear, top .06s linear; }
+.takeaway-sync__mirrors img.is-active { outline: 3px solid var(--coral); }
+.takeaway-sync__arrival { position: absolute; z-index: 5; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--paper); transform: translateX(110%); animation: phone-transfer-in 1.45s cubic-bezier(.62,.02,.2,1) forwards; }
+@keyframes phone-transfer-in { to { transform: translateX(0); } }
+.takeaway-sync__actions { position: absolute; z-index: 7; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; padding: 10px; color: var(--paper); background: var(--ink); animation: reveal .45s ease forwards; }
+.takeaway-sync__actions p { margin: 0 8px; font: 500 9px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.takeaway-sync__actions .primary-button { min-width: 190px; }
+.takeaway-sync__status { position: absolute; z-index: 8; right: 18px; top: 20px; display: flex; align-items: center; gap: 8px; font: 500 8px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.takeaway-sync__status i { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); }
+.takeaway-sync__status i.is-live { background: #3eb86b; box-shadow: 0 0 0 4px rgba(62,184,107,.16); }
 
 .developer-menu { position: fixed; top: 18px; right: 18px; z-index: 30; width: 220px; padding: 12px; color: #f6f0df; background: rgba(16,21,17,.92); border: 1px solid rgba(255,255,255,.25); box-shadow: 0 12px 30px rgba(0,0,0,.2); font: 10px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
 .developer-menu__label { margin-bottom: 10px; color: var(--cyan); }
@@ -237,5 +285,14 @@ em { font-family: var(--serif); font-weight: 400; }
   .flow-error { padding: 70px 24px; }
   .flow-error__actions { flex-direction: column; }
   .share-card { min-height: 420px; }
+  .results--phone-connected { padding: 66px 14px 14px; }
+  .results--phone-connected .results__heading { display: flex; }
+  .results--phone-connected .results__heading h1 { font-size: 38px; }
+  .handoff-stage { min-height: 530px; }
+  .phone-target { left: 50%; top: 40%; width: auto; height: min(48vh, 420px); transform: translate(-50%, -50%); }
+  .handoff-stage__copy { display: none; }
+  .handoff-card { width: 42vw; }
+  .handoff-card--original { width: 36vw; }
+  .handoff-transfer { right: 50%; bottom: 5%; transform: translateX(50%); }
   .developer-menu { top: 12px; right: 12px; width: 190px; }
 }

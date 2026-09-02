@@ -1,34 +1,47 @@
+import { useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { takeawayUrl } from "../api.js";
+import { photoUrl, takeawayUrl } from "../api.js";
+import { usePhotoSync } from "../hooks/usePhotoSync.js";
+import HandoffStage from "./HandoffStage.jsx";
 
-export default function Results({ result, onReset }) {
+export default function Results({ result, onReset, onActivity }) {
   const shareUrl = takeawayUrl(result.photoId);
+  const originalUrl = photoUrl(`${result.photoId}-source`);
+  const sync = usePhotoSync(result.photoId, "kiosk");
+
+  useEffect(() => {
+    if (sync.phoneConnected || sync.moved || sync.transfer) onActivity?.();
+  }, [sync.phoneConnected, sync.moved, sync.transfer?.version, onActivity]);
+
   return (
-    <section className="results" aria-labelledby="results-title">
+    <section className={`results ${sync.phoneConnected ? "results--phone-connected" : ""}`} aria-labelledby="results-title">
       <header className="results__heading">
         <div>
-          <p className="eyebrow">{result.styleLabel || "Every portrait"} / complete</p>
-          <h1 id="results-title">This is you,<br /><em>after automation.</em></h1>
+          <p className="eyebrow">{sync.phoneConnected ? "Phone connected / ready to cross" : `${result.styleLabel || "Every portrait"} / complete`}</p>
+          <h1 id="results-title">{sync.phoneConnected ? <>Hold it<br /><em>to the outline.</em></> : <>This is you,<br /><em>after automation.</em></>}</h1>
         </div>
         <button type="button" className="secondary-button" onClick={onReset}>Start again</button>
       </header>
-      <div className="results__experience">
-        <figure className="result-hero">
-          <img src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait, with the original camera photo inset`} />
-          <figcaption><span>Every / Thesis: 2027</span><span>{result.styleLabel}</span></figcaption>
-        </figure>
-        <aside className="share-card">
-          <span className="share-card__star">✳</span>
-          <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={190} level="M" /></div>
-          <div>
-            <p className="eyebrow">Your takeaway</p>
-            <h2>Scan to save<br /><em>the portrait.</em></h2>
-            <p className="share-card__instruction">Open the link on your phone to download or share the full-resolution image.</p>
-            <p className="share-card__print-note">Print edition coming soon.</p>
-          </div>
-          <button type="button" className="text-button" onClick={onReset}>Start again <span>↗</span></button>
-        </aside>
-      </div>
+      {sync.phoneConnected ? (
+        <HandoffStage result={result} originalUrl={originalUrl} sync={sync} />
+      ) : (
+        <div className="results__experience">
+          <figure className="result-hero">
+            <img src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait, with the original camera photo inset`} />
+            <figcaption><span>Every / Thesis: 2027</span><span>{result.styleLabel}</span></figcaption>
+          </figure>
+          <aside className="share-card">
+            <span className="share-card__star">✳</span>
+            <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={190} level="M" /></div>
+            <div>
+              <p className="eyebrow">Connect your phone</p>
+              <h2>Scan to begin<br /><em>the handoff.</em></h2>
+              <p className="share-card__instruction">Keep this screen open. Your phone and the booth will become one canvas.</p>
+              <p className="share-card__connection">{sync.status === "connected" ? "Waiting for phone…" : "Connecting booth…"}</p>
+            </div>
+          </aside>
+        </div>
+      )}
     </section>
   );
 }

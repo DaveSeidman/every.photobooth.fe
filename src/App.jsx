@@ -66,6 +66,11 @@ function Booth() {
     }
   }, []);
 
+  const refreshResultTimeout = useCallback(() => {
+    if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = window.setTimeout(() => reset(true), appConfig.resetDelayMs);
+  }, [reset]);
+
   useEffect(() => () => {
     clearTimers();
     cameraRef.current?.stop();
@@ -161,7 +166,7 @@ function Booth() {
       });
       transitionTimerRef.current = window.setTimeout(() => {
         setPhase("results");
-        resetTimerRef.current = window.setTimeout(() => reset(true), appConfig.resetDelayMs);
+        refreshResultTimeout();
       }, 450);
     } catch (requestError) {
       setError(requestError.message);
@@ -243,7 +248,7 @@ function Booth() {
       )}
 
       {phase === "results" && result && (
-        <Results result={result} onReset={() => reset(true)} />
+        <Results result={result} onReset={() => reset(true)} onActivity={refreshResultTimeout} />
       )}
     </main>
   );
