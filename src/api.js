@@ -30,13 +30,14 @@ export async function fetchExperience() {
   }
 }
 
-export async function submitPhoto(photo, { mode = "every", style } = {}) {
+export async function submitPhoto(photo, { mode = "every", style, promptOverride } = {}) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), appConfig.generationTimeoutMs);
   const form = new FormData();
   form.append("photo", photo, "photo.jpg");
   form.append("mode", mode);
   if (style) form.append("style", style);
+  if (promptOverride?.trim()) form.append("promptOverride", promptOverride.trim());
 
   try {
     const response = await fetch(`${appConfig.apiUrl}/submit`, {

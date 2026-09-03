@@ -55,7 +55,7 @@ export function usePhotoSync(photoId, role) {
         } catch {
           return;
         }
-        if (message.type === "cards:move" || message.type === "card:move") {
+        if (role === "phone" && (message.type === "cards:move" || message.type === "card:move")) {
           const moves = message.type === "cards:move" ? message.cards : [message];
           moves.forEach((move) => inboundMovesRef.current.set(move.card, move));
           if (!inboundFrameRef.current) {
@@ -86,8 +86,8 @@ export function usePhotoSync(photoId, role) {
         setState((current) => {
           if (message.type === "session") {
             const sharedSession = role === "phone"
-              ? { phones: message.phones, kiosks: message.kiosks }
-              : { cards: message.cards, moved: message.moved, phones: message.phones, kiosks: message.kiosks };
+              ? { cards: message.cards, moved: message.moved, phones: message.phones, kiosks: message.kiosks }
+              : { phones: message.phones, kiosks: message.kiosks };
             return {
               ...current,
               ...sharedSession,

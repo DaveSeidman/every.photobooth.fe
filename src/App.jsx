@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HashRouter, Route, Routes, useParams } from "react-router-dom";
+import { button, Leva, useControls } from "leva";
+import { flushSync } from "react-dom";
 import { fetchExperience, photoUrl, submitPhoto } from "./api.js";
 import { appConfig, defaultExperience } from "./config.js";
 import Camera from "./components/Camera.jsx";
@@ -18,6 +20,7 @@ function Booth() {
   const resetTimerRef = useRef(null);
   const transitionTimerRef = useRef(null);
   const captureStartedRef = useRef(false);
+  const processPhotoRef = useRef(null);
   const [phase, setPhase] = useState("attract");
   const [cameraStatus, setCameraStatus] = useState("idle");
   const [count, setCount] = useState(appConfig.countdownSeconds);
@@ -28,6 +31,43 @@ function Booth() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [experience, setExperience] = useState(defaultExperience);
+  const [showPromptControls, setShowPromptControls] = useState(false);
+  const { promptOverride } = useControls("Generation", {
+    promptOverride: {
+      value: "",
+      label: "Prompt override",
+      rows: 12,
+    },
+    "Transform with custom prompt": button(
+      () => processPhotoRef.current?.({ id: "custom", label: "Custom prompt" }),
+      { disabled: !captureBlob },
+    ),
+    "Toggle fullscreen": button(() => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      } else {
+        document.documentElement.requestFullscreen?.();
+      }
+    }),
+  }, [Boolean(captureBlob)]);
+
+  const transitionTo = useCallback((nextPhase) => {
+    if (!document.startViewTransition) {
+      setPhase(nextPhase);
+      return;
+    }
+    document.startViewTransition(() => flushSync(() => setPhase(nextPhase)));
+  }, []);
+
+  useEffect(() => {
+    const togglePromptControls = (event) => {
+      if (event.key !== "F1") return;
+      event.preventDefault();
+      setShowPromptControls((visible) => !visible);
+    };
+    window.addEventListener("keydown", togglePromptControls);
+    return () => window.removeEventListener("keydown", togglePromptControls);
+  }, []);
 
   useEffect(() => {
     fetchExperience().then(setExperience);
@@ -101,11 +141,11 @@ function Booth() {
     setOriginalPhoto(URL.createObjectURL(blob));
     if (withFlash) {
       setPhase("flash");
-      transitionTimerRef.current = window.setTimeout(() => setPhase("review"), 420);
+      transitionTimerRef.current = window.setTimeout(() => transitionTo("review"), 420);
     } else {
       setPhase("review");
     }
-  }, []);
+  }, [transitionTo]);
 
   useEffect(() => {
     if (phase !== "countdown") return undefined;
@@ -150,7 +190,7 @@ function Booth() {
     if (brand === "posthog") {
       processPhoto({ id: "paper-hedgehogs", label: "Paper Hedgehog World" });
     } else {
-      setPhase("styles");
+      transitionTo("styles");
     }
   };
 
@@ -159,9 +199,13 @@ function Booth() {
     setSelectedStyle(style);
     setProgress(5);
     setError("");
-    setPhase("processing");
+    transitionTo("processing");
     try {
-      const response = await submitPhoto(captureBlob, { mode: brand, style: style.id });
+      const response = await submitPhoto(captureBlob, {
+        mode: brand,
+        style: style.id,
+        promptOverride,
+      });
       const output = response.output;
       setProgress(100);
       setResult({
@@ -180,21 +224,20 @@ function Booth() {
       setPhase("error");
     }
   };
+  processPhotoRef.current = processPhoto;
 
   const cameraVisible = ["attract", "camera", "countdown", "flash"].includes(phase);
   const styles = experience.everyStyles || defaultExperience.everyStyles;
 
   return (
     <main className={`booth booth--${phase} booth--mode-${brand}`} data-testid="booth">
+      <Leva hidden={!showPromptControls} collapsed={false} titleBar={{ title: "Prompt override" }} />
       <Camera ref={cameraRef} visible={cameraVisible} onStatusChange={setCameraStatus} />
       <KioskChrome phase={phase} cameraStatus={cameraStatus} brand={brand} />
 
       {phase === "attract" && (
         <section className="attract-panel">
           {brand === "posthog" && <div className="posthog-attract-world"><PosthogWorld image="" label="" /></div>}
-          <div className="attract-orbits" aria-hidden="true">
-            <i /><i /><i /><i />
-          </div>
           <div className="attract-panel__copy">
             <p className="eyebrow">{brand === "posthog" ? "PostHog / Paper Lab" : appConfig.kicker}</p>
             <h1>{brand === "posthog" ? <>Become a<br /><em>tiny hedgehog.</em></> : <>Step into<br /><em>the future.</em></>}</h1>
@@ -236,7 +279,7 @@ function Booth() {
       )}
 
       {phase === "styles" && (
-        <StylePicker styles={styles} onSelect={processPhoto} onRetake={retake} />
+        <StylePicker photo={originalPhoto} styles={styles} onSelect={processPhoto} onRetake={retake} />
       )}
 
       {phase === "processing" && (
