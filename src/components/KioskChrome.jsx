@@ -1,4 +1,4 @@
-export default function KioskChrome({ phase, cameraStatus }) {
+export default function KioskChrome({ phase, cameraStatus, brand = "every" }) {
   const statusLabel = {
     attract: "Waiting",
     camera: cameraStatus === "ready" ? "Camera ready" : "Camera setup",
@@ -13,9 +13,9 @@ export default function KioskChrome({ phase, cameraStatus }) {
 
   return (
     <div className="chrome" aria-hidden="true">
-      <div className="chrome__wordmark">EV<em>E</em>RY</div>
+      <div className="chrome__wordmark">{brand === "posthog" ? <>POST<span>HOG</span></> : <>EV<em>E</em>RY</>}</div>
       <div className="chrome__status"><span>✳</span>{statusLabel}</div>
-      <div className="chrome__mark">THESIS: 2027 / EVERY PORTRAIT</div>
+      <div className="chrome__mark">{brand === "posthog" ? "PAPER LAB / HEDGEHOG PORTRAIT" : "THESIS: 2027 / EVERY PORTRAIT"}</div>
     </div>
   );
 }

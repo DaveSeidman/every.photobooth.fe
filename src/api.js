@@ -1,4 +1,5 @@
 import { appConfig, defaultExperience } from "./config.js";
+import { currentBrand } from "./brand.js";
 
 async function parseResponse(response) {
   const payload = await response.json().catch(() => ({}));
@@ -58,6 +59,9 @@ export function photoUrl(photoId, extension = "jpg") {
   return `${appConfig.apiUrl}/photos/${photoId}.${extension}`;
 }
 
-export function takeawayUrl(photoId) {
-  return `${appConfig.publicAppUrl}/#/takeaway/${photoId}`;
+export function takeawayUrl(photoId, brand = currentBrand()) {
+  const url = new URL(appConfig.publicAppUrl);
+  url.searchParams.set("brand", brand);
+  url.hash = `/takeaway/${photoId}`;
+  return url.toString();
 }

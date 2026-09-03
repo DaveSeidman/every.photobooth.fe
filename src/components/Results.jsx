@@ -3,9 +3,10 @@ import { QRCodeSVG } from "qrcode.react";
 import { photoUrl, takeawayUrl } from "../api.js";
 import { usePhotoSync } from "../hooks/usePhotoSync.js";
 import HandoffStage from "./HandoffStage.jsx";
+import PosthogWorld from "./PosthogWorld.jsx";
 
-export default function Results({ result, onReset, onActivity }) {
-  const shareUrl = takeawayUrl(result.photoId);
+export default function Results({ result, onReset, onActivity, brand = "every" }) {
+  const shareUrl = takeawayUrl(result.photoId, brand);
   const originalUrl = photoUrl(`${result.photoId}-source`);
   const sync = usePhotoSync(result.photoId, "kiosk");
 
@@ -18,7 +19,7 @@ export default function Results({ result, onReset, onActivity }) {
       <header className="results__heading">
         <div>
           <p className="eyebrow">{sync.phoneConnected ? "Phone connected / ready to cross" : `${result.styleLabel || "Every portrait"} / complete`}</p>
-          <h1 id="results-title">{sync.phoneConnected ? <>Hold it<br /><em>to the outline.</em></> : <>This is you,<br /><em>after automation.</em></>}</h1>
+          <h1 id="results-title">{sync.phoneConnected ? <>Hold it<br /><em>to the outline.</em></> : brand === "posthog" ? <>Meet your<br /><em>paper selves.</em></> : <>This is you,<br /><em>after automation.</em></>}</h1>
         </div>
         <button type="button" className="secondary-button" onClick={onReset}>Start again</button>
       </header>
@@ -26,10 +27,14 @@ export default function Results({ result, onReset, onActivity }) {
         <HandoffStage result={result} originalUrl={originalUrl} sync={sync} />
       ) : (
         <div className="results__experience">
-          <figure className="result-hero">
-            <img src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait, with the original camera photo inset`} />
-            <figcaption><span>Every / Thesis: 2027</span><span>{result.styleLabel}</span></figcaption>
-          </figure>
+          {brand === "posthog" ? (
+            <PosthogWorld image={result.styled} label="Your PostHog paper-world portrait" />
+          ) : (
+            <figure className="result-hero">
+              <img src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait, with the original camera photo inset`} />
+              <figcaption><span>Every / Thesis: 2027</span><span>{result.styleLabel}</span></figcaption>
+            </figure>
+          )}
           <aside className="share-card">
             <span className="share-card__star">✳</span>
             <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={190} level="M" /></div>

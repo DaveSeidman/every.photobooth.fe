@@ -9,8 +9,11 @@ import Processing from "./components/Processing.jsx";
 import Results from "./components/Results.jsx";
 import StylePicker from "./components/StylePicker.jsx";
 import Takeaway from "./components/Takeaway.jsx";
+import PosthogWorld from "./components/PosthogWorld.jsx";
+import { currentBrand } from "./brand.js";
 
 function Booth() {
+  const brand = currentBrand();
   const cameraRef = useRef(null);
   const resetTimerRef = useRef(null);
   const transitionTimerRef = useRef(null);
@@ -144,7 +147,11 @@ function Booth() {
 
   const approvePhoto = () => {
     cameraRef.current?.stop();
-    setPhase("styles");
+    if (brand === "posthog") {
+      processPhoto({ id: "paper-hedgehogs", label: "Paper Hedgehog World" });
+    } else {
+      setPhase("styles");
+    }
   };
 
   const processPhoto = async (style) => {
@@ -154,7 +161,7 @@ function Booth() {
     setError("");
     setPhase("processing");
     try {
-      const response = await submitPhoto(captureBlob, { mode: "every", style: style.id });
+      const response = await submitPhoto(captureBlob, { mode: brand, style: style.id });
       const output = response.output;
       setProgress(100);
       setResult({
@@ -178,21 +185,22 @@ function Booth() {
   const styles = experience.everyStyles || defaultExperience.everyStyles;
 
   return (
-    <main className={`booth booth--${phase} booth--mode-every`} data-testid="booth">
+    <main className={`booth booth--${phase} booth--mode-${brand}`} data-testid="booth">
       <Camera ref={cameraRef} visible={cameraVisible} onStatusChange={setCameraStatus} />
-      <KioskChrome phase={phase} cameraStatus={cameraStatus} />
+      <KioskChrome phase={phase} cameraStatus={cameraStatus} brand={brand} />
 
       {phase === "attract" && (
         <section className="attract-panel">
+          {brand === "posthog" && <div className="posthog-attract-world"><PosthogWorld image="" label="" /></div>}
           <div className="attract-orbits" aria-hidden="true">
             <i /><i /><i /><i />
           </div>
           <div className="attract-panel__copy">
-            <p className="eyebrow">{appConfig.kicker}</p>
-            <h1>Step into<br /><em>the future.</em></h1>
-            <p className="attract-panel__intro">The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI.</p>
+            <p className="eyebrow">{brand === "posthog" ? "PostHog / Paper Lab" : appConfig.kicker}</p>
+            <h1>{brand === "posthog" ? <>Become a<br /><em>tiny hedgehog.</em></> : <>Step into<br /><em>the future.</em></>}</h1>
+            <p className="attract-panel__intro">{brand === "posthog" ? "Step into a playful paper micro-world, then meet the hedgehog version of your group." : "The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI."}</p>
             <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
-              Start your Thesis <span>↗</span>
+              {brand === "posthog" ? "Enter the garden" : "Start your Thesis"} <span>↗</span>
             </button>
           </div>
         </section>
@@ -248,13 +256,14 @@ function Booth() {
       )}
 
       {phase === "results" && result && (
-        <Results result={result} onReset={() => reset(true)} onActivity={refreshResultTimeout} />
+        <Results result={result} brand={brand} onReset={() => reset(true)} onActivity={refreshResultTimeout} />
       )}
     </main>
   );
 }
 
 function HandoffPreview() {
+  const brand = currentBrand();
   const { photoId } = useParams();
   const result = {
     photoId,
@@ -264,7 +273,7 @@ function HandoffPreview() {
 
   return (
     <main className="booth booth--results booth--mode-every">
-      <Results result={result} onReset={() => { window.location.hash = "/"; }} />
+      <Results result={result} brand={brand} onReset={() => { window.location.hash = "/"; }} />
     </main>
   );
 }

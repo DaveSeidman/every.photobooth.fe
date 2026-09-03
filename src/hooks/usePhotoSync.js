@@ -15,8 +15,8 @@ const initialState = {
   phones: 0,
   kiosks: 0,
   cards: {
-    original: { x: 0.7, y: 0.3, phoneX: 2, phoneY: 0.3, rotation: -3 },
-    styled: { x: 0.76, y: 0.62, phoneX: 2, phoneY: 0.62, rotation: 2 },
+    original: { x: 0.7, y: 0.3, phoneX: 2, phoneY: 0.3, rotation: -3, layer: 1, settled: false },
+    styled: { x: 0.76, y: 0.62, phoneX: 2, phoneY: 0.62, rotation: 2, layer: 2, settled: false },
   },
   moved: false,
   completed: null,
@@ -27,6 +27,10 @@ export function usePhotoSync(photoId, role) {
   const socketRef = useRef(null);
   const reconnectRef = useRef(null);
   const attemptsRef = useRef(0);
+  const outboundMovesRef = useRef(new Map());
+  const outboundFrameRef = useRef(null);
+  const inboundMovesRef = useRef(new Map());
+  const inboundFrameRef = useRef(null);
   const [state, setState] = useState(initialState);
 
   useEffect(() => {
@@ -51,6 +55,34 @@ export function usePhotoSync(photoId, role) {
         } catch {
           return;
         }
+        if (message.type === "cards:move" || message.type === "card:move") {
+          const moves = message.type === "cards:move" ? message.cards : [message];
+          moves.forEach((move) => inboundMovesRef.current.set(move.card, move));
+          if (!inboundFrameRef.current) {
+            inboundFrameRef.current = window.requestAnimationFrame(() => {
+              const frameMoves = [...inboundMovesRef.current.values()];
+              inboundMovesRef.current.clear();
+              inboundFrameRef.current = null;
+              setState((latest) => {
+                const cards = { ...latest.cards };
+                frameMoves.forEach((move) => {
+                  cards[move.card] = {
+                    x: move.x,
+                    y: move.y,
+                    phoneX: move.phoneX,
+                      phoneY: move.phoneY,
+                      rotation: move.rotation,
+                      layer: move.layer,
+                      settled: move.settled,
+                  };
+                });
+                const activeMove = [...frameMoves].reverse().find((move) => move.dragging);
+                return { ...latest, moved: true, activeCard: activeMove?.card || null, cards };
+              });
+            });
+          }
+          return;
+        }
         setState((current) => {
           if (message.type === "session") {
             const sharedSession = role === "phone"
@@ -64,23 +96,6 @@ export function usePhotoSync(photoId, role) {
           }
           if (message.type === "presence") {
             return { ...current, phones: message.phones, kiosks: message.kiosks };
-          }
-          if (message.type === "card:move") {
-            return {
-              ...current,
-              moved: true,
-              activeCard: message.dragging ? message.card : null,
-              cards: {
-                ...current.cards,
-                [message.card]: {
-                  x: message.x,
-                  y: message.y,
-                  phoneX: message.phoneX,
-                  phoneY: message.phoneY,
-                  rotation: message.rotation,
-                },
-              },
-            };
           }
           if (message.type === "handoff:complete") {
             return { ...current, completed: message.version };
@@ -102,6 +117,10 @@ export function usePhotoSync(photoId, role) {
     return () => {
       stopped = true;
       window.clearTimeout(reconnectRef.current);
+      window.cancelAnimationFrame(outboundFrameRef.current);
+      window.cancelAnimationFrame(inboundFrameRef.current);
+      outboundMovesRef.current.clear();
+      inboundMovesRef.current.clear();
       socketRef.current?.close();
     };
   }, [photoId, role]);
@@ -112,15 +131,29 @@ export function usePhotoSync(photoId, role) {
     }
   }, []);
 
-  const sendCard = useCallback((card, position, dragging = false) => {
+  const sendCards = useCallback((updates) => {
     setState((current) => ({
       ...current,
       moved: true,
-      activeCard: dragging ? card : null,
-      cards: { ...current.cards, [card]: position },
+      activeCard: [...updates].reverse().find((update) => update.dragging)?.card || null,
+      cards: updates.reduce((cards, update) => ({ ...cards, [update.card]: update.position }), current.cards),
     }));
-    send({ type: "card:move", card, ...position, dragging });
+    updates.forEach(({ card, position, dragging = false }) => {
+      outboundMovesRef.current.set(card, { card, ...position, dragging });
+    });
+    if (!outboundFrameRef.current) {
+      outboundFrameRef.current = window.requestAnimationFrame(() => {
+        const cards = [...outboundMovesRef.current.values()];
+        outboundMovesRef.current.clear();
+        outboundFrameRef.current = null;
+        if (cards.length) send({ type: "cards:move", cards });
+      });
+    }
   }, [send]);
+
+  const sendCard = useCallback((card, position, dragging = false) => {
+    sendCards([{ card, position, dragging }]);
+  }, [sendCards]);
 
   const completeHandoff = useCallback(() => {
     send({ type: "handoff:complete" });
@@ -130,6 +163,7 @@ export function usePhotoSync(photoId, role) {
     ...state,
     phoneConnected: state.phones > 0,
     sendCard,
+    sendCards,
     completeHandoff,
   };
 }
