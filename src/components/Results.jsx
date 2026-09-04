@@ -5,7 +5,7 @@ import { usePhotoSync } from "../hooks/usePhotoSync.js";
 import HandoffStage from "./HandoffStage.jsx";
 import PosthogWorld from "./PosthogWorld.jsx";
 
-export default function Results({ result, onReset, onActivity, brand = "every" }) {
+export default function Results({ result, onReset, onActivity, brand = "every", timeoutVersion = 0, timeoutMs = 30_000 }) {
   const shareUrl = takeawayUrl(result.photoId, brand);
   const originalUrl = photoUrl(`${result.photoId}-source`);
   const sync = usePhotoSync(result.photoId, "kiosk");
@@ -16,6 +16,15 @@ export default function Results({ result, onReset, onActivity, brand = "every" }
 
   return (
     <section className={`results ${sync.phoneConnected ? "results--phone-connected" : ""}`} aria-labelledby="results-title">
+      {onActivity && (
+        <div
+          key={timeoutVersion}
+          className="timeout-line"
+          style={{ "--timeout-duration": `${timeoutMs}ms` }}
+          role="timer"
+          aria-label="Time remaining before this screen resets"
+        />
+      )}
       <header className="results__heading">
         <div>
           <p className="eyebrow">{sync.phoneConnected ? "Phone connected / ready to cross" : `${result.styleLabel || "Every portrait"} / complete`}</p>
@@ -31,7 +40,10 @@ export default function Results({ result, onReset, onActivity, brand = "every" }
             <PosthogWorld image={result.styled} label="Your PostHog paper-world portrait" />
           ) : (
             <figure className="result-hero">
-              <img src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait, with the original camera photo inset`} />
+              <div className="result-hero__images">
+                <img className="result-hero__styled" src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait`} />
+                <img className="result-hero__source" src={originalUrl} alt="Original camera portrait" />
+              </div>
               <figcaption><span>Every / Thesis: 2027</span><span>{result.styleLabel}</span></figcaption>
             </figure>
           )}

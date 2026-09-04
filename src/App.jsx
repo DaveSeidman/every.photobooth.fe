@@ -14,6 +14,12 @@ import Takeaway from "./components/Takeaway.jsx";
 import PosthogWorld from "./components/PosthogWorld.jsx";
 import { currentBrand } from "./brand.js";
 
+function replaceHash(path) {
+  const url = new URL(window.location.href);
+  url.hash = path;
+  window.history.replaceState(window.history.state, "", url);
+}
+
 function Booth() {
   const brand = currentBrand();
   const cameraRef = useRef(null);
@@ -31,6 +37,7 @@ function Booth() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [experience, setExperience] = useState(defaultExperience);
+  const [timeoutVersion, setTimeoutVersion] = useState(0);
   const [showPromptControls, setShowPromptControls] = useState(false);
   const { promptOverride } = useControls("Generation", {
     promptOverride: {
@@ -76,6 +83,12 @@ function Booth() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!originalPhoto) return;
+    const spinner = new Image();
+    spinner.src = `${import.meta.env.BASE_URL}rockspin.gif`;
+  }, [originalPhoto]);
+
   const clearTimers = () => {
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
     if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
@@ -101,6 +114,7 @@ function Booth() {
     setProgress(0);
     setCount(appConfig.countdownSeconds);
     captureStartedRef.current = false;
+    replaceHash("/");
     setPhase(toAttract ? "attract" : "camera");
     if (toAttract) {
       cameraRef.current?.start().catch(() => {
@@ -111,6 +125,7 @@ function Booth() {
 
   const refreshResultTimeout = useCallback(() => {
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+    setTimeoutVersion((version) => version + 1);
     resetTimerRef.current = window.setTimeout(() => reset(true), appConfig.resetDelayMs);
   }, [reset]);
 
@@ -135,16 +150,11 @@ function Booth() {
     setPhase("countdown");
   }, []);
 
-  const acceptCapture = useCallback((blob, withFlash = false) => {
+  const acceptCapture = useCallback((blob) => {
     clearCapture();
     setCaptureBlob(blob);
     setOriginalPhoto(URL.createObjectURL(blob));
-    if (withFlash) {
-      setPhase("flash");
-      transitionTimerRef.current = window.setTimeout(() => transitionTo("review"), 420);
-    } else {
-      setPhase("review");
-    }
+    transitionTo("review");
   }, [transitionTo]);
 
   useEffect(() => {
@@ -155,12 +165,15 @@ function Booth() {
     }
     if (captureStartedRef.current) return undefined;
     captureStartedRef.current = true;
-    cameraRef.current.capture()
-      .then((blob) => acceptCapture(blob, true))
-      .catch((captureError) => {
-        setError(captureError.message);
-        setPhase("error");
-      });
+    setPhase("flash");
+    transitionTimerRef.current = window.setTimeout(() => {
+      cameraRef.current.capture()
+        .then(acceptCapture)
+        .catch((captureError) => {
+          setError(captureError.message);
+          setPhase("error");
+        });
+    }, 200);
     return undefined;
   }, [phase, count, acceptCapture]);
 
@@ -217,6 +230,7 @@ function Booth() {
       });
       transitionTimerRef.current = window.setTimeout(() => {
         setPhase("results");
+        replaceHash(`/handoff/${output.photoId}`);
         refreshResultTimeout();
       }, 450);
     } catch (requestError) {
@@ -299,7 +313,14 @@ function Booth() {
       )}
 
       {phase === "results" && result && (
-        <Results result={result} brand={brand} onReset={() => reset(true)} onActivity={refreshResultTimeout} />
+        <Results
+          result={result}
+          brand={brand}
+          onReset={() => reset(true)}
+          onActivity={refreshResultTimeout}
+          timeoutVersion={timeoutVersion}
+          timeoutMs={appConfig.resetDelayMs}
+        />
       )}
     </main>
   );

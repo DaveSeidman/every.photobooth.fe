@@ -73,10 +73,11 @@ function DraggablePhoto({ card, label, src, position, active, stageSize, onDragS
       onPointerMove={moveDrag}
       onPointerUp={stopDrag}
       onPointerCancel={stopDrag}
-      aria-label={`Drag ${label}`}
+      disabled={position.settled}
+      aria-label={position.settled ? `${label} transferred to phone` : `Drag ${label}`}
     >
       <img src={src} alt="" draggable="false" />
-      <span className="handoff-card__label">{label}</span>
+      <span className="handoff-card__label">{position.settled ? "On phone" : label}</span>
     </button>
   );
 }
