@@ -79,7 +79,11 @@ export default function Takeaway() {
 
   return (
     <main className={`takeaway-sync takeaway-sync--${brand}`}>
-      <header className="takeaway-sync__brand">{brand === "posthog" ? <>POSTHOG <span>◆</span></> : <>EV<em>E</em>RY <span>✳</span></>}</header>
+      <header className="takeaway-sync__brand">
+        {brand === "posthog"
+          ? <>POSTHOG <span>◆</span></>
+          : <><img src={`${import.meta.env.BASE_URL}every-logo.svg`} alt="Every" /><span>✳</span></>}
+      </header>
       <section
         className={`takeaway-sync__prompt ${sync.moved ? "is-hidden" : ""}`}
         aria-hidden={sync.moved}
