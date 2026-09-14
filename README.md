@@ -30,10 +30,13 @@ Build a small set of optimized, rigged 3D hedgehogs with baked walk/play and mas
 
 ## GitHub Pages
 
-The included Pages workflow builds from `main` and deliberately fails if the backend URL is missing.
+The included Pages workflow builds from `main`, publishes the app at `/every/`, and deliberately fails if the backend URL is missing. The production build uses `https://photobooth.lightboxlive.io/every` for QR takeaway links and redirects the custom-domain root to the app.
 
 1. Deploy the backend Blueprint and copy its `https://…onrender.com` URL.
 2. In `DaveSeidman/every.photobooth.fe`, open **Settings → Secrets and variables → Actions → Variables**.
 3. Add `VITE_API_URL` with the Render URL and no trailing slash.
-4. Optionally add `VITE_PUBLIC_APP_URL` if the final site uses a custom domain. The default correctly resolves to the GitHub Pages project path.
-5. Under **Settings → Pages**, choose **GitHub Actions** as the deployment source, then push `main` or run the workflow manually.
+4. Under **Settings → Pages**, choose **GitHub Actions** as the deployment source and set the custom domain to `photobooth.lightboxlive.io`.
+5. At the DNS provider, point a `photobooth` CNAME to `daveseidman.github.io`.
+6. Push `main` or run the workflow manually, then enable **Enforce HTTPS** after GitHub issues the certificate.
+
+The Render backend must include `https://photobooth.lightboxlive.io` in `ALLOWED_ORIGINS` for both API and WebSocket access.

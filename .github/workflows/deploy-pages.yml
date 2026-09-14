@@ -31,10 +31,16 @@ jobs:
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
-          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
+          VITE_PUBLIC_APP_URL: https://photobooth.lightboxlive.io/every
+          VITE_BASE_PATH: /every/
+      - name: Assemble Pages site
+        run: |
+          mkdir -p _site/every
+          cp -R dist/. _site/every/
+          cp pages-root/index.html _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     environment:
