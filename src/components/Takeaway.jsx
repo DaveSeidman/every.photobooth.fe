@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { appConfig } from "../config.js";
 import { photoUrl } from "../api.js";
 import { usePhotoSync } from "../hooks/usePhotoSync.js";
@@ -7,12 +7,23 @@ import { currentBrand } from "../brand.js";
 
 export default function Takeaway() {
   const { photoId } = useParams();
+  const [searchParams] = useSearchParams();
+  const fallback = searchParams.get("fallback") === "1";
   const [sharing, setSharing] = useState(null);
   const [message, setMessage] = useState("");
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
-  const stillUrl = photoId ? photoUrl(photoId, "jpg") : null;
-  const originalUrl = photoId ? photoUrl(`${photoId}-source`, "jpg") : null;
-  const sync = usePhotoSync(photoId, "phone");
+  const stillUrl = fallback ? `${import.meta.env.BASE_URL}style-previews/future-of-work.jpg` : (photoId ? photoUrl(photoId, "jpg") : null);
+  const originalUrl = fallback ? `${import.meta.env.BASE_URL}test-frames/image3.png` : (photoId ? photoUrl(`${photoId}-source`, "jpg") : null);
+  const liveSync = usePhotoSync(fallback ? null : photoId, "phone");
+  const sync = fallback ? {
+    status: "test photo",
+    moved: true,
+    activeCard: null,
+    cards: {
+      original: { phoneX: .5, phoneY: .46, rotation: 0, layer: 1, settled: true },
+      styled: { phoneX: .5, phoneY: .46, rotation: 0, layer: 2, settled: true },
+    },
+  } : liveSync;
   const brand = currentBrand();
 
   useEffect(() => {
@@ -95,7 +106,7 @@ export default function Takeaway() {
 
       {sync.moved && (
         <div className="takeaway-sync__mirrors" aria-label="Synced portrait positions">
-          {phoneCard("original", sync.cards.original, originalUrl, "original portrait")}
+          {!fallback && phoneCard("original", sync.cards.original, originalUrl, "original portrait")}
           {phoneCard("styled", sync.cards.styled, stillUrl, "styled portrait")}
         </div>
       )}
