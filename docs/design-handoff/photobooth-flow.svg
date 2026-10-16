@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2460" height="1930" viewBox="0 0 2460 1930">
+<rect width="2460" height="1930" fill="#f3f4f6"/>
+<text x="80" y="70" font-family="Arial,sans-serif" font-size="36" fill="#1c2331">EVERY PHOTOBOOTH / 8 TABLET SCREENS + 1 TAKEAWAY PAGE</text>
+<text x="80" y="112" font-family="Arial,sans-serif" font-size="23" fill="#1c2331">Tablet: always 924 × 1480, scaled with viewport height and centered on dark gray. Phone: fluid single page.</text>
+<text x="80" y="155" font-family="Arial,sans-serif" font-size="20" fill="#5b6474">Blank rectangles are design placeholders. IDs match the black developer labels in the app.</text>
+<g id="01">
+<text x="80" y="225" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">01 / Attract</text>
+<rect x="80" y="270" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="80" y="620" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Start your Thesis → camera</text>
+</g>
+<g id="02">
+<text x="690" y="225" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">02 / Camera setup / ready</text>
+<rect x="690" y="270" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="690" y="620" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Take portrait; error is a variant</text>
+</g>
+<g id="03">
+<text x="1300" y="225" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">03 / Countdown / flash</text>
+<rect x="1300" y="270" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="1300" y="620" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">3–2–1 → automatic capture</text>
+</g>
+<g id="04">
+<text x="1910" y="225" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">04 / Review photo</text>
+<rect x="1910" y="270" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="1910" y="620" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Retake / Use this photo</text>
+</g>
+<g id="05">
+<text x="80" y="845" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">05 / Choose Every style</text>
+<rect x="80" y="890" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="80" y="1240" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Four transformations; tap to generate</text>
+</g>
+<g id="06">
+<text x="690" y="845" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">06 / Generating / finishing</text>
+<rect x="690" y="890" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="690" y="1240" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Separate spinner; retry error variant</text>
+</g>
+<g id="07">
+<text x="1300" y="845" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">07 / Finished portrait + QR</text>
+<rect x="1300" y="890" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="1300" y="1240" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">QR stays visible during all transfers</text>
+</g>
+<g id="08">
+<text x="1910" y="845" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">08 / Phone connected / transfer</text>
+<rect x="1910" y="890" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="1910" y="1240" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Exit up → delayed phone arrival</text>
+<text x="1910" y="1267" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Photo scales/fades back at center</text>
+</g>
+<polyline points="520,430 690,430" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="690,430 676,423 676,437" fill="#2b63d0"/>
+<text x="550" y="410" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Start</text>
+<polyline points="1130,430 1300,430" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="1300,430 1286,423 1286,437" fill="#2b63d0"/>
+<text x="1160" y="410" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Shutter</text>
+<polyline points="1740,430 1910,430" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="1910,430 1896,423 1896,437" fill="#2b63d0"/>
+<text x="1770" y="410" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Capture</text>
+<polyline points="2130,590 2130,730 300,730 300,890" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="300,890 293,876 307,876" fill="#2b63d0"/>
+<text x="1060" y="714" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Approve → choose a style</text>
+<polyline points="520,1050 690,1050" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="690,1050 676,1043 676,1057" fill="#2b63d0"/>
+<text x="535" y="1030" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Select style</text>
+<polyline points="1130,1050 1300,1050" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="1300,1050 1286,1043 1286,1057" fill="#2b63d0"/>
+<text x="1145" y="1030" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Success</text>
+<polyline points="1740,1050 1910,1050" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="1910,1050 1896,1043 1896,1057" fill="#2b63d0"/>
+<text x="1755" y="1030" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Phone connects</text>
+<polyline points="2130,1210 2130,1350 1520,1350 1520,1210" fill="none" stroke="#2b63d0" stroke-width="3"/>
+<polygon points="1520,1210 1513,1196 1527,1196" fill="#2b63d0"/>
+<text x="1560" y="1330" font-family="Arial,sans-serif" font-size="18" fill="#2b63d0">Photo restored → ready for another scan</text>
+<g id="M01">
+<text x="1300" y="1435" font-family="Arial,sans-serif" font-size="25" fill="#1c2331">M01 / Takeaway / sharing</text>
+<rect x="1300" y="1480" width="440" height="320" rx="5" fill="white" stroke="#a3acba" stroke-width="2"/>
+<text x="1300" y="1830" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Single photo + native share/save button</text>
+<text x="1300" y="1857" font-family="Arial,sans-serif" font-size="18" fill="#5b6474">Loading/errors are variants on this page</text>
+</g>
+<polyline points="1520,1210 1520,1410 1380,1410 1380,1480" fill="none" stroke="#8244b0" stroke-width="3"/>
+<polygon points="1380,1480 1373,1466 1387,1466" fill="#8244b0"/>
+<text x="1120" y="1392" font-family="Arial,sans-serif" font-size="18" fill="#8244b0">QR opens photo page</text>
+<polyline points="2200,1210 2200,1610 1740,1610" fill="none" stroke="#8244b0" stroke-width="3"/>
+<polygon points="1740,1610 1754,1603 1754,1617" fill="#8244b0"/>
+<text x="1810" y="1590" font-family="Arial,sans-serif" font-size="18" fill="#8244b0">Automatic delayed arrival</text>
+<text x="80" y="1510" font-family="Arial,sans-serif" font-size="24" fill="#1c2331">RETAKES + ERRORS</text>
+<text x="80" y="1555" font-family="Arial,sans-serif" font-size="20" fill="#1c2331">Review / style retake → 02</text>
+<text x="80" y="1590" font-family="Arial,sans-serif" font-size="20" fill="#1c2331">Camera issues stay within 02</text>
+<text x="80" y="1625" font-family="Arial,sans-serif" font-size="20" fill="#1c2331">Generation failure stays within 06</text>
+<text x="80" y="1660" font-family="Arial,sans-serif" font-size="20" fill="#1c2331">Start again / result timeout → 01</text>
+<text x="80" y="1730" font-family="Arial,sans-serif" font-size="24" fill="#1c2331">HANDOFF TIMING</text>
+<text x="80" y="1772" font-family="Arial,sans-serif" font-size="20" fill="#1c2331">Tablet exits 750 ms → 350 ms gap → phone enters 700 ms → tablet fades/scales back 450 ms.</text>
+<text x="80" y="1808" font-family="Arial,sans-serif" font-size="20" fill="#1c2331">Each new phone repeats the sequence; close arrivals queue. Delivered phones do not replay.</text>
+<text x="80" y="1870" font-family="Arial,sans-serif" font-size="20" fill="#5b6474">Import this SVG into Figma; arrows are visual annotations, not clickable prototype links. See SCREEN-INVENTORY.md.</text>
+</svg>

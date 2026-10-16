@@ -1,6 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-const Camera = forwardRef(function Camera({ visible = true, onStatusChange }, ref) {
+import FaceFlowParticles from "./FaceFlowParticles.jsx";
+
+const Camera = forwardRef(function Camera({ visible = true, particlesActive = false, onStatusChange }, ref) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [status, setStatus] = useState("idle");
@@ -72,6 +74,7 @@ const Camera = forwardRef(function Camera({ visible = true, onStatusChange }, re
     <div className={`camera ${visible ? "" : "camera--muted"}`} data-camera-status={status}>
       <video ref={videoRef} autoPlay muted playsInline aria-label="Live camera preview" />
       <div className="camera__wash" />
+      <FaceFlowParticles videoRef={videoRef} active={particlesActive} ready={status === "ready"} />
     </div>
   );
 });

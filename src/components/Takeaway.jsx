@@ -2,117 +2,74 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { appConfig } from "../config.js";
 import { photoUrl } from "../api.js";
-import { usePhotoSync } from "../hooks/usePhotoSync.js";
-import { currentBrand } from "../brand.js";
+import { useHandoffTiming, usePhotoSync } from "../hooks/usePhotoSync.js";
+import DeveloperScreenLabel from "./DeveloperScreenLabel.jsx";
 
 export default function Takeaway() {
   const { photoId } = useParams();
   const [searchParams] = useSearchParams();
   const fallback = searchParams.get("fallback") === "1";
-  const [sharing, setSharing] = useState(null);
+  const [sharing, setSharing] = useState(false);
   const [message, setMessage] = useState("");
-  const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
-  const stillUrl = fallback ? `${import.meta.env.BASE_URL}style-previews/future-of-work.jpg` : (photoId ? photoUrl(photoId, "jpg") : null);
-  const originalUrl = fallback ? `${import.meta.env.BASE_URL}test-frames/image3.png` : (photoId ? photoUrl(`${photoId}-source`, "jpg") : null);
-  const liveSync = usePhotoSync(fallback ? null : photoId, "phone");
-  const sync = fallback ? {
-    status: "test photo",
-    moved: true,
-    activeCard: null,
-    cards: {
-      original: { phoneX: .5, phoneY: .46, rotation: 0, layer: 1, settled: true },
-      styled: { phoneX: .5, phoneY: .46, rotation: 0, layer: 2, settled: true },
-    },
-  } : liveSync;
-  const brand = currentBrand();
+  const [revealed, setRevealed] = useState(false);
+  const [imageStatus, setImageStatus] = useState("loading");
+  const [retry, setRetry] = useState(0);
+  const stillUrl = fallback ? `${import.meta.env.BASE_URL}style-previews/future-of-work.jpg` : (photoId ? photoUrl(photoId) : null);
+  const sync = usePhotoSync(fallback ? null : photoId, "phone");
+  const timing = useHandoffTiming(sync.handoff, sync.clockOffset, "phone");
 
   useEffect(() => {
-    const updateViewport = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
-  }, []);
+    setRevealed(false); setMessage(""); setImageStatus("loading");
+  }, [photoId]);
+  useEffect(() => {
+    if (fallback || timing.started || (sync.status === "connected" && sync.kiosks === 0)) setRevealed(true);
+  }, [fallback, timing.started, sync.status, sync.kiosks]);
+  const ready = revealed || fallback || timing.started;
 
-  const share = async (card, imageUrl) => {
-    if (!photoId) return;
-    setSharing(card);
-    setMessage("");
+  const share = async () => {
+    if (sharing || !ready || imageStatus !== "loaded") return;
+    setSharing(true); setMessage("");
     try {
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error("Your image is still being prepared.");
+      const response = await fetch(stillUrl);
+      if (!response.ok) throw new Error("Your image could not be downloaded. Please try again.");
       const blob = await response.blob();
-      const file = new File([blob], `${brand}-${card}-${photoId}.jpg`, { type: blob.type });
+      const file = new File([blob], `every-portrait-${photoId}.jpg`, { type: blob.type });
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ files: [file], title: appConfig.title, text: "My portrait study" });
+        await navigator.share({ files: [file], title: appConfig.title, text: "My Every portrait" });
       } else {
+        const objectUrl = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
-        anchor.href = URL.createObjectURL(blob);
-        anchor.download = file.name;
-        anchor.click();
-        URL.revokeObjectURL(anchor.href);
+        anchor.href = objectUrl; anchor.download = file.name;
+        document.body.append(anchor); anchor.click(); anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       }
     } catch (error) {
       if (error.name !== "AbortError") setMessage(error.message);
-    } finally {
-      setSharing(null);
-    }
+    } finally { setSharing(false); }
   };
 
-  if (!photoId) {
-    return <main className="takeaway takeaway--missing"><p>This portrait link is incomplete.</p></main>;
-  }
-
-  const cardStyle = (position) => ({
-    left: 0,
-    top: 0,
-    zIndex: 4 + (position.layer || 0),
-    transform: `translate3d(${(position.phoneX ?? position.x) * viewport.width}px, ${(position.phoneY ?? position.y) * viewport.height}px, 0) translate(-50%, -50%) rotate(${position.rotation || 0}deg)`,
-  });
-
-  const phoneCard = (card, position, imageUrl, label) => (
-    <button
-      type="button"
-      className={`takeaway-sync__card takeaway-sync__card--${card} ${sync.activeCard === card ? "is-active" : ""} ${position.settled ? "is-settled" : ""}`}
-      style={cardStyle(position)}
-      onClick={() => {
-        if (position.settled) share(card, imageUrl);
-      }}
-      aria-label={position.settled ? `Save or share ${label}` : `${label} moving from the booth`}
-    >
-      <img src={imageUrl} alt="" draggable="false" />
-      {position.settled && (
-        <span className="takeaway-sync__save">
-          <i aria-hidden="true">↓</i>
-          <b>{sharing === card ? "Preparing your thesis…" : "Click to save or share your thesis"}</b>
-        </span>
-      )}
-    </button>
-  );
-
   return (
-    <main className={`takeaway-sync takeaway-sync--${brand}`}>
-      <header className="takeaway-sync__brand">
-        {brand === "posthog"
-          ? <>POSTHOG <span>◆</span></>
-          : <><img src={`${import.meta.env.BASE_URL}every-logo.svg`} alt="Every" /><span>✳</span></>}
+    <main className="takeaway-page">
+      <DeveloperScreenLabel name="M01 / TAKEAWAY" />
+      <header className="takeaway-page__header">
+        <img src={`${import.meta.env.BASE_URL}every-logo.svg`} alt="Every" />
+        <span>{fallback ? "Preview" : sync.status === "connected" ? "Connected" : sync.status === "reconnecting" ? "Reconnecting…" : "Connecting…"}</span>
       </header>
-      <section
-        className={`takeaway-sync__prompt ${sync.moved ? "is-hidden" : ""}`}
-        aria-hidden={sync.moved}
-      >
-        <p>{sync.status === "connected" ? "Phone and booth connected" : "Connecting to the booth"}</p>
-        <h1>Hold your phone up<br /><em>to the screen.</em></h1>
-        <small>Keep this page open and hold your phone upright.</small>
-      </section>
-
-      {sync.moved && (
-        <div className="takeaway-sync__mirrors" aria-label="Synced portrait positions">
-          {!fallback && phoneCard("original", sync.cards.original, originalUrl, "original portrait")}
-          {phoneCard("styled", sync.cards.styled, stillUrl, "styled portrait")}
+      <section className="takeaway-page__gallery" aria-label="Your Every portrait">
+        <div className={`takeaway-page__portrait ${timing.animating ? "is-transferring-in" : ""}`} style={{ animationDelay: timing.animationDelay }}>
+          {photoId && <img key={retry} src={`${stillUrl}${retry ? `?retry=${retry}` : ""}`} alt="Your Every portrait" hidden={!ready || imageStatus !== "loaded"}
+            onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />}
+          {!photoId ? <div className="takeaway-page__image-status"><p>This portrait link is incomplete.</p><p>Scan the QR code on the booth.</p></div>
+            : imageStatus === "error" ? <div className="takeaway-page__image-status" role="alert"><p>This portrait could not be loaded.</p><button type="button" className="secondary-button" onClick={() => { setImageStatus("loading"); setRetry((value) => value + 1); }}>Try again</button></div>
+            : (!ready || imageStatus === "loading") && <p className="takeaway-page__image-status" role="status">{ready ? "Loading your portrait…" : "Your portrait is on its way…"}</p>}
         </div>
-      )}
-
-      {message && <p className="takeaway-sync__message" role="status">{message}</p>}
-      <div className="takeaway-sync__status"><i className={sync.status === "connected" ? "is-live" : ""} />{sync.status}</div>
+        <div className="takeaway-page__actions">
+          <button type="button" className="primary-button" disabled={sharing || !ready || timing.animating || imageStatus !== "loaded"} onClick={share}>{sharing ? "Preparing…" : "Save or share portrait"}<span aria-hidden="true">↓</span></button>
+          {message && <p className="takeaway-page__error" role="status">{message} Tap save to try again.</p>}
+          {!ready && sync.status === "reconnecting" && <button type="button" className="text-link-button" onClick={() => setRevealed(true)}>View my portrait</button>}
+        </div>
+      </section>
+      <footer className="takeaway-page__footer">Every / Thesis: 2027 <span>Yours to keep.</span></footer>
     </main>
   );
 }

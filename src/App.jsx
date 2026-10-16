@@ -13,6 +13,7 @@ import StylePicker from "./components/StylePicker.jsx";
 import Takeaway from "./components/Takeaway.jsx";
 import PosthogWorld from "./components/PosthogWorld.jsx";
 import { currentBrand } from "./brand.js";
+import DeveloperScreenLabel from "./components/DeveloperScreenLabel.jsx";
 
 function replaceHash(path) {
   const url = new URL(window.location.href);
@@ -242,11 +243,18 @@ function Booth() {
 
   const cameraVisible = ["attract", "camera", "countdown", "flash"].includes(phase);
   const styles = experience.everyStyles || defaultExperience.everyStyles;
+  const screenLabels = {
+    attract: "01 / ATTRACT", camera: "02 / CAMERA SETUP",
+    countdown: "03 / COUNTDOWN + FLASH", flash: "03 / COUNTDOWN + FLASH", review: "04 / REVIEW PHOTO",
+    styles: "05 / CHOOSE EVERY STYLE", processing: "06 / GENERATING PORTRAIT",
+    error: captureBlob ? "06 / GENERATING PORTRAIT" : "02 / CAMERA SETUP",
+  };
 
   return (
     <main className={`booth booth--${phase} booth--mode-${brand}`} data-testid="booth">
+      {phase !== "results" && <DeveloperScreenLabel name={screenLabels[phase]} />}
       <Leva hidden={!showPromptControls} collapsed={false} titleBar={{ title: "Prompt override" }} />
-      <Camera ref={cameraRef} visible={cameraVisible} onStatusChange={setCameraStatus} />
+      <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} />
       <KioskChrome phase={phase} cameraStatus={cameraStatus} brand={brand} />
 
       {phase === "attract" && (
@@ -271,10 +279,8 @@ function Booth() {
             {error && <p className="error-message" role="alert">{error}</p>}
           </div>
           <div className="capture-panel__actions">
-            <button type="button" className="shutter-button" onClick={startCountdown} disabled={cameraStatus !== "ready"} aria-label="Take portrait">
-              <span className="shutter-button__lens" />
-              <span>Take portrait</span>
-            </button>
+            <button type="button" className="shutter-button" onClick={startCountdown} disabled={cameraStatus !== "ready"} aria-label="Take portrait" />
+            <span className="shutter-button__label" aria-hidden="true">Take portrait</span>
           </div>
         </section>
       )}

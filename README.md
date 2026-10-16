@@ -22,7 +22,17 @@ Choose the branded experience with `http://localhost:8080/?brand=every#/` or `ht
 
 Both dev servers bind to `0.0.0.0`. The phone uses ordinary HTTP and `ws://` on the local network; the deployed GitHub Pages app uses HTTPS and `wss://` automatically.
 
-The backend receives the camera portrait and selected style. The results page shows the completed notched portrait and a QR takeaway link. When a phone opens that link, the booth and every connected phone join a photo-specific WebSocket room. Dragged portraits mirror live; dropping a card mostly inside the phone target snaps it to center; and **Send to phone** performs the same movement automatically. The phone does not reveal the portrait until movement begins. Printing remains a coming-soon message.
+The tablet app always uses a centered 924 × 1480 portrait canvas, scaled with viewport height (100vh × 62.432432vh). Dark gray surrounds it in landscape browsers. Tablet dimensions/type/spacing use vh; the phone takeaway remains fluid.
+
+The backend receives the camera portrait and chosen style. The result keeps its QR code visible throughout phone handoffs. Each new phone session automatically triggers a sequence: tablet photo exits over 750 ms, phone starts entering 350 ms after that exit finishes and arrives over 700 ms, then the tablet photo returns at center with a 450 ms scale/fade. Close arrivals queue so the photo can return before repeating. Existing delivered phones do not replay when someone else scans; reconnects retain their own delivery. A direct link without a connected booth shows the photo immediately. There is no send button or dragging.
+
+The takeaway is one page: generated photo plus **Save or share portrait**. Supported browsers open the native share sheet; others download the image. There is no Original tab. Developer IDs are limited to 01–08 on the tablet and M01 on the phone. The full designer list is `docs/design-handoff/SCREEN-INVENTORY.md`.
+
+### Attract-screen face particles
+
+The attract fade is restricted to the bottom 38vh, leaving the camera view above it clear. Face detection and two-level sparse Lucas–Kanade optical flow run in a browser worker against a mirrored 160 × 256 crop that matches the visible video. Fine particles stream from detected face edges, following local motion. The overlay fades out over 850 ms when entering camera setup; the worker and render loop stop immediately. It never appears in the captured portrait. Reduced-motion users see the regular camera view.
+
+The face model and WASM runtime are served locally from `public/vision/`; see its README for asset provenance and update instructions. No camera frames are uploaded for this effect. Rendering is limited to 30 fps and 240 particles, and analysis keeps only one frame in flight. Run `npm test` for optical-flow translation/static-frame checks. Actual tablet performance should still be assessed on the Samsung hardware.
 
 ### Later PostHog interaction phase
 
