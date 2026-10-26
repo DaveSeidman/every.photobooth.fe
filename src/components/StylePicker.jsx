@@ -4,7 +4,7 @@ export default function StylePicker({ photo, styles, onSelect, onRetake }) {
       <header className="style-picker__header">
         <div>
           <p className="eyebrow">Four possible futures</p>
-          <h1 id="style-picker-title">Choose your<br /><em>transformation.</em></h1>
+          <h1 id="style-picker-title">Choose your <em>future</em></h1>
         </div>
         <div className="style-picker__source">
           <img src={photo} alt="Your captured portrait" />
@@ -22,10 +22,11 @@ export default function StylePicker({ photo, styles, onSelect, onRetake }) {
             style={{ "--node-delay": `${80 + index * 45}ms` }}
           >
             <img src={style.preview} alt={`${style.label} example`} />
-            <strong>{style.label}</strong>
+            <span className="style-card__copy"><strong>{style.label}</strong><span>{style.description}</span></span>
           </button>
         ))}
       </div>
+      <button type="button" className="secondary-button style-picker__retake" onClick={onRetake}>Retake photo</button>
     </section>
   );
 }

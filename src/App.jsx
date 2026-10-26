@@ -11,9 +11,8 @@ import Processing from "./components/Processing.jsx";
 import Results from "./components/Results.jsx";
 import StylePicker from "./components/StylePicker.jsx";
 import Takeaway from "./components/Takeaway.jsx";
-import PosthogWorld from "./components/PosthogWorld.jsx";
-import { currentBrand } from "./brand.js";
 import DeveloperScreenLabel from "./components/DeveloperScreenLabel.jsx";
+import DesignPreview from "./components/DesignPreview.jsx";
 
 function replaceHash(path) {
   const url = new URL(window.location.href);
@@ -22,7 +21,6 @@ function replaceHash(path) {
 }
 
 function Booth() {
-  const brand = currentBrand();
   const cameraRef = useRef(null);
   const resetTimerRef = useRef(null);
   const transitionTimerRef = useRef(null);
@@ -80,15 +78,9 @@ function Booth() {
   useEffect(() => {
     fetchExperience().then(setExperience);
     cameraRef.current?.start().catch(() => {
-      setError("Camera access is unavailable. Choose a photo below or check browser permissions.");
+      setError("Camera access is unavailable. Check browser permissions and try again.");
     });
   }, []);
-
-  useEffect(() => {
-    if (!originalPhoto) return;
-    const spinner = new Image();
-    spinner.src = `${import.meta.env.BASE_URL}rockspin.gif`;
-  }, [originalPhoto]);
 
   const clearTimers = () => {
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
@@ -107,7 +99,6 @@ function Booth() {
 
   const reset = useCallback((toAttract = true) => {
     clearTimers();
-    cameraRef.current?.stop();
     clearCapture();
     setSelectedStyle(null);
     setResult(null);
@@ -119,7 +110,7 @@ function Booth() {
     setPhase(toAttract ? "attract" : "camera");
     if (toAttract) {
       cameraRef.current?.start().catch(() => {
-        setError("Camera access is unavailable. Choose a photo below or check browser permissions.");
+        setError("Camera access is unavailable. Check browser permissions and try again.");
       });
     }
   }, []);
@@ -141,7 +132,7 @@ function Booth() {
     try {
       await cameraRef.current.start();
     } catch {
-      setError("Camera access is unavailable. Choose a photo below or check browser permissions.");
+      setError("Camera access is unavailable. Check browser permissions and try again.");
     }
   };
 
@@ -183,7 +174,7 @@ function Booth() {
     const startedAt = Date.now();
     const timer = window.setInterval(() => {
       const elapsedSeconds = (Date.now() - startedAt) / 1000;
-      setProgress(Math.min(92, Math.round(8 + elapsedSeconds * 7.2)));
+      setProgress((current) => current >= 100 ? current : Math.min(92, Math.round(8 + elapsedSeconds * 7.2)));
     }, 250);
     return () => window.clearInterval(timer);
   }, [phase]);
@@ -195,17 +186,12 @@ function Booth() {
     try {
       await cameraRef.current.start();
     } catch {
-      setError("Camera access is unavailable. Choose a photo below or check browser permissions.");
+      setError("Camera access is unavailable. Check browser permissions and try again.");
     }
   };
 
   const approvePhoto = () => {
-    cameraRef.current?.stop();
-    if (brand === "posthog") {
-      processPhoto({ id: "paper-hedgehogs", label: "Paper Hedgehog World" });
-    } else {
-      transitionTo("styles");
-    }
+    transitionTo("styles");
   };
 
   const processPhoto = async (style) => {
@@ -216,7 +202,7 @@ function Booth() {
     transitionTo("processing");
     try {
       const response = await submitPhoto(captureBlob, {
-        mode: brand,
+        mode: "every",
         style: style.id,
         promptOverride,
       });
@@ -229,11 +215,6 @@ function Booth() {
         styleProfile: output.styleProfile,
         styleLabel: output.styleLabel || style.label,
       });
-      transitionTimerRef.current = window.setTimeout(() => {
-        setPhase("results");
-        replaceHash(`/handoff/${output.photoId}`);
-        refreshResultTimeout();
-      }, 450);
     } catch (requestError) {
       setError(requestError.message);
       setPhase("error");
@@ -241,7 +222,7 @@ function Booth() {
   };
   processPhotoRef.current = processPhoto;
 
-  const cameraVisible = ["attract", "camera", "countdown", "flash"].includes(phase);
+  const cameraVisible = ["attract", "camera", "countdown", "flash", "resetting"].includes(phase);
   const styles = experience.everyStyles || defaultExperience.everyStyles;
   const screenLabels = {
     attract: "01 / ATTRACT", camera: "02 / CAMERA SETUP",
@@ -251,21 +232,20 @@ function Booth() {
   };
 
   return (
-    <main className={`booth booth--${phase} booth--mode-${brand}`} data-testid="booth">
-      {phase !== "results" && <DeveloperScreenLabel name={screenLabels[phase]} />}
+    <main className={`booth booth--${phase} booth--mode-every`} data-testid="booth">
+      {!['results', 'resetting'].includes(phase) && <DeveloperScreenLabel name={screenLabels[phase]} />}
       <Leva hidden={!showPromptControls} collapsed={false} titleBar={{ title: "Prompt override" }} />
       <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} />
-      <KioskChrome phase={phase} cameraStatus={cameraStatus} brand={brand} />
+      {phase !== "results" && <KioskChrome phase={phase} cameraStatus={cameraStatus} />}
 
       {phase === "attract" && (
         <section className="attract-panel">
-          {brand === "posthog" && <div className="posthog-attract-world"><PosthogWorld image="" label="" /></div>}
           <div className="attract-panel__copy">
-            <p className="eyebrow">{brand === "posthog" ? "PostHog / Paper Lab" : appConfig.kicker}</p>
-            <h1>{brand === "posthog" ? <>Become a<br /><em>tiny hedgehog.</em></> : <>Step into<br /><em>the future.</em></>}</h1>
-            <p className="attract-panel__intro">{brand === "posthog" ? "Step into a playful paper micro-world, then meet the hedgehog version of your group." : "The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI."}</p>
+            <p className="eyebrow">{appConfig.kicker}</p>
+            <h1>Welcome to <em className="thesis-italic">the future</em></h1>
+            <p className="attract-panel__intro">The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI.</p>
             <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
-              {brand === "posthog" ? "Enter the garden" : "Start your Thesis"} <span>↗</span>
+              Start your Thesis
             </button>
           </div>
         </section>
@@ -275,11 +255,11 @@ function Booth() {
         <section className="capture-panel">
           <div>
             <p className="eyebrow">Every portrait / 001</p>
-            <h1>{cameraStatus === "ready" ? <>Frame <em>the human.</em></> : "Camera setup."}</h1>
+            <h1>Frame <em>the human</em></h1>
             {error && <p className="error-message" role="alert">{error}</p>}
           </div>
           <div className="capture-panel__actions">
-            <button type="button" className="shutter-button" onClick={startCountdown} disabled={cameraStatus !== "ready"} aria-label="Take portrait" />
+            <button type="button" className="shutter-button" onClick={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting"} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</button>
             <span className="shutter-button__label" aria-hidden="true">Take portrait</span>
           </div>
         </section>
@@ -287,8 +267,9 @@ function Booth() {
 
       {phase === "countdown" && (
         <section className="countdown" aria-live="assertive">
-          <p>Hold the pose</p>
-          <strong>{count || "•"}</strong>
+          <div className="countdown__wash" aria-hidden="true" />
+          <h1>Hold <em>the pose</em></h1>
+          <strong key={count}>{count || "•"}</strong>
         </section>
       )}
 
@@ -303,26 +284,40 @@ function Booth() {
       )}
 
       {phase === "processing" && (
-        <Processing progress={progress} photo={originalPhoto} style={selectedStyle} />
+        <Processing
+          progress={progress}
+          result={result}
+          source={originalPhoto}
+          style={selectedStyle}
+          onComplete={() => {
+            if (!result) return;
+            setPhase("results");
+            refreshResultTimeout();
+          }}
+        />
       )}
 
       {phase === "error" && captureBlob && (
         <section className="flow-error" role="alert">
-          <p className="eyebrow">Something interrupted the transformation</p>
-          <h1>Keep the photo.<br /><em>Try again.</em></h1>
-          <p>{error}</p>
+          <h1>Keep the photo.<em>Try again.</em></h1>
+          {originalPhoto && <div className="flow-error__portrait"><img src={originalPhoto} alt="Your captured portrait" /><p>{error}</p></div>}
           <div className="flow-error__actions">
-            <button type="button" className="primary-button" onClick={() => setPhase("styles")}>Choose a style</button>
             <button type="button" className="secondary-button" onClick={() => reset(true)}>Restart</button>
+            <button type="button" className="primary-button" onClick={() => setPhase("styles")}>Choose a style</button>
           </div>
         </section>
       )}
 
-      {phase === "results" && result && (
+      {["results", "resetting"].includes(phase) && result && (
         <Results
           result={result}
-          brand={brand}
-          onReset={() => reset(true)}
+          onReset={() => {
+            if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+            resetTimerRef.current = null;
+            setPhase("resetting");
+            transitionTimerRef.current = window.setTimeout(() => reset(true), 450);
+          }}
+          isResetting={phase === "resetting"}
           onActivity={refreshResultTimeout}
           timeoutVersion={timeoutVersion}
           timeoutMs={appConfig.resetDelayMs}
@@ -333,7 +328,6 @@ function Booth() {
 }
 
 function HandoffPreview() {
-  const brand = currentBrand();
   const { photoId } = useParams();
   const result = {
     photoId,
@@ -343,18 +337,26 @@ function HandoffPreview() {
 
   return (
     <main className="booth booth--results booth--mode-every">
-      <Results result={result} brand={brand} onReset={() => { window.location.hash = "/"; }} />
+      <Results result={result} onReset={() => { window.location.hash = "/"; }} />
     </main>
   );
 }
 
 export default function App() {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("brand")) return;
+    url.searchParams.delete("brand");
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
+
   return (
     <HashRouter>
       <Routes>
         <Route path="/" element={<Booth />} />
         <Route path="/handoff/:photoId" element={<HandoffPreview />} />
         <Route path="/takeaway/:photoId?" element={<Takeaway />} />
+        <Route path="/preview/:screen?" element={<DesignPreview />} />
       </Routes>
     </HashRouter>
   );

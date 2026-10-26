@@ -11,7 +11,15 @@ npm run dev
 
 Open `http://localhost:8080` for camera access. When `VITE_API_URL` is omitted, the frontend calls port `8000` on the same hostname, so both localhost and same-Wi-Fi phone testing work.
 
-Choose the branded experience with `http://localhost:8080/?brand=every#/` or `http://localhost:8080/?brand=posthog#/`. Missing and unknown values are normalized to `brand=every`, and the selected brand is carried into the QR takeaway URL.
+The camera stream stays open throughout the booth session, including review, style selection, generation, results, and resets. Its preview is hidden on screens that do not use it. The stream is released when the booth unmounts or the page closes.
+
+### Thesis design review
+
+Open `http://localhost:8080/#/preview/attract` to review the complete design flow without camera permissions, API requests, or portrait generation. The screen selector covers attract, framing, countdown, flash, review, four styles, generation, error, results, and phone handoff. The style selector changes the example portrait; Replay handoff repeats the departure and return animation. The M01 link opens the phone takeaway with a sample portrait. Arrow keys step through tablet screens when a form control is not focused.
+
+The implementation follows [the Thesis photobooth prototype](https://internal-every.hi-23d.workers.dev/photobooth/), using its Signifier and Founders fonts, outlined branding, Brooklyn illustration, perforated SVG frames and buttons, and transparent stone animation, served locally from `public/thesis/`. The tablet preserves the reference's 1848 × 2960 proportions and fits both available height and width. The phone page uses the reference's 430 × 932 spacing and allows scrolling on short displays. Live routes retain camera capture, generation, QR delivery, and native sharing.
+
+The booth uses one Every Thesis experience at `http://localhost:8080/`. Legacy `?brand=` links are cleaned up automatically, and QR takeaway links no longer include a brand parameter.
 
 ### Test the handoff over Wi-Fi
 

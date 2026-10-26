@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1208" height="1340" viewBox="0 0 1208 1340">
+  <!-- Placeholder guest for the simulated camera: two rounded rectangles, head and body, centred and
+       bottom-anchored so any crop (camera, inset, thumbnail) keeps the head. Shared by the web prototype and
+       the Figma plugin. -->
+  <defs>
+    <radialGradient id="pf-light" cx="0.5" cy="0.38" r="0.7">
+      <stop offset="0" stop-color="#3A3B3E"/>
+      <stop offset="1" stop-color="#2A2B2D"/>
+    </radialGradient>
+  </defs>
+  <rect width="1208" height="1340" fill="url(#pf-light)"/>
+  <g fill="#55575C">
+    <rect x="449" y="370" width="310" height="350" rx="96"/>
+    <rect x="274" y="770" width="660" height="700" rx="150"/>
+  </g>
+</svg>

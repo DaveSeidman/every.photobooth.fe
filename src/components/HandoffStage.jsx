@@ -6,6 +6,10 @@ export default function HandoffStage({ result, originalUrl, sync }) {
   return (
     <figure className="result-hero" aria-label="Your portrait and automatic phone handoff">
       <div className="result-hero__images">
+        <div className={`handoff-away ${timing.animating || timing.away ? "is-visible" : ""}`} aria-hidden={!(timing.animating || timing.away)}>
+          <span className="handoff-away__star" aria-hidden="true" />
+          <span>On its way<br />to your phone</span>
+        </div>
         <div key={`${sync.handoff?.id || "initial"}-${state}`} className={`transfer-photo ${state}`} style={{ animationDelay: timing.restoring ? timing.restoreDelay : timing.animationDelay }}>
           <img className="result-hero__styled" src={result.styled} alt={`Your ${result.styleLabel || "Every"} portrait`} />
           <img className="result-hero__source" src={originalUrl} alt="Original camera portrait" />

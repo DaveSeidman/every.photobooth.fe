@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { appConfig } from "../config.js";
+import { appConfig, defaultExperience } from "../config.js";
 import { photoUrl } from "../api.js";
 import { useHandoffTiming, usePhotoSync } from "../hooks/usePhotoSync.js";
 import DeveloperScreenLabel from "./DeveloperScreenLabel.jsx";
@@ -14,13 +14,16 @@ export default function Takeaway() {
   const [revealed, setRevealed] = useState(false);
   const [imageStatus, setImageStatus] = useState("loading");
   const [retry, setRetry] = useState(0);
-  const stillUrl = fallback ? `${import.meta.env.BASE_URL}style-previews/future-of-work.jpg` : (photoId ? photoUrl(photoId) : null);
+  const imageRef = useRef(null);
+  const previewStyle = defaultExperience.everyStyles.find((style) => style.id === searchParams.get("style")) || defaultExperience.everyStyles[2];
+  const stillUrl = fallback ? previewStyle.preview : (photoId ? photoUrl(photoId) : null);
   const sync = usePhotoSync(fallback ? null : photoId, "phone");
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset, "phone");
 
   useEffect(() => {
-    setRevealed(false); setMessage(""); setImageStatus("loading");
-  }, [photoId]);
+    setRevealed(false); setMessage("");
+    setImageStatus(imageRef.current?.complete && imageRef.current.naturalWidth ? "loaded" : "loading");
+  }, [photoId, stillUrl]);
   useEffect(() => {
     if (fallback || timing.started || (sync.status === "connected" && sync.kiosks === 0)) setRevealed(true);
   }, [fallback, timing.started, sync.status, sync.kiosks]);
@@ -52,24 +55,25 @@ export default function Takeaway() {
     <main className="takeaway-page">
       <DeveloperScreenLabel name="M01 / TAKEAWAY" />
       <header className="takeaway-page__header">
-        <img src={`${import.meta.env.BASE_URL}every-logo.svg`} alt="Every" />
+        <img src={`${import.meta.env.BASE_URL}thesis/img/thesis27.svg`} alt="Thesis: 2027" />
         <span>{fallback ? "Preview" : sync.status === "connected" ? "Connected" : sync.status === "reconnecting" ? "Reconnecting…" : "Connecting…"}</span>
       </header>
+      <h1 className="takeaway-page__title">Yours <em>to keep</em></h1>
       <section className="takeaway-page__gallery" aria-label="Your Every portrait">
         <div className={`takeaway-page__portrait ${timing.animating ? "is-transferring-in" : ""}`} style={{ animationDelay: timing.animationDelay }}>
-          {photoId && <img key={retry} src={`${stillUrl}${retry ? `?retry=${retry}` : ""}`} alt="Your Every portrait" hidden={!ready || imageStatus !== "loaded"}
+          {photoId && <img ref={imageRef} key={`${stillUrl}-${retry}`} src={`${stillUrl}${retry ? `?retry=${retry}` : ""}`} alt="Your Every portrait" hidden={!ready || imageStatus !== "loaded"}
             onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />}
           {!photoId ? <div className="takeaway-page__image-status"><p>This portrait link is incomplete.</p><p>Scan the QR code on the booth.</p></div>
             : imageStatus === "error" ? <div className="takeaway-page__image-status" role="alert"><p>This portrait could not be loaded.</p><button type="button" className="secondary-button" onClick={() => { setImageStatus("loading"); setRetry((value) => value + 1); }}>Try again</button></div>
             : (!ready || imageStatus === "loading") && <p className="takeaway-page__image-status" role="status">{ready ? "Loading your portrait…" : "Your portrait is on its way…"}</p>}
+          <p className="takeaway-page__caption">{fallback ? previewStyle.label : searchParams.get("label") || "Every portrait"}</p>
         </div>
         <div className="takeaway-page__actions">
-          <button type="button" className="primary-button" disabled={sharing || !ready || timing.animating || imageStatus !== "loaded"} onClick={share}>{sharing ? "Preparing…" : "Save or share portrait"}<span aria-hidden="true">↓</span></button>
+          <button type="button" className="primary-button" disabled={sharing || !ready || timing.animating || imageStatus !== "loaded"} onClick={share}>{sharing ? "Preparing…" : "Save or share portrait"}</button>
           {message && <p className="takeaway-page__error" role="status">{message} Tap save to try again.</p>}
           {!ready && sync.status === "reconnecting" && <button type="button" className="text-link-button" onClick={() => setRevealed(true)}>View my portrait</button>}
         </div>
       </section>
-      <footer className="takeaway-page__footer">Every / Thesis: 2027 <span>Yours to keep.</span></footer>
     </main>
   );
 }
