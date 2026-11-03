@@ -27,7 +27,7 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
     return () => timers.clearInterval(timer);
   }, [timeoutVersion, timeoutMs, onActivity]);
   const scanCardRef = useRef(null);
-  const phoneFeedback = useTakeawayEcho(sync.takeawayInteraction, scanCardRef, onActivity, !isResetting);
+  const phoneFeedback = useTakeawayEcho(sync.takeawayInteraction, scanCardRef, onActivity, !isResetting, sync.subscribeTakeawayInteraction);
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset);
   const visualState = timing.animating ? "is-transferring-out" : timing.away ? "is-away" : timing.restoring ? "is-restoring" : "";
   useEffect(() => {

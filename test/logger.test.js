@@ -30,3 +30,14 @@ test("cyclic state is safe and exported snapshots cannot mutate the ring", () =>
     clearLogs();
   } finally { console.debug = originalDebug; }
 });
+
+test("high-frequency motion records remain exportable without console work", () => {
+  const original = console.debug;
+  let printed = 0;
+  console.debug = () => { printed++; };
+  try {
+    const entry = logEvent("socket.motion-test", {x:.25}, "info", {console:false});
+    assert.equal(printed,0);
+    assert.ok(getLogs().records.some(record => record.sequence===entry.sequence));
+  } finally { console.debug = original; }
+});

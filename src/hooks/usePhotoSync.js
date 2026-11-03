@@ -1,3 +1,4 @@
+import { createLatestMotionSender } from "../lib/remoteMotion.js";
 import { logEvent } from "../lib/logger.js";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
@@ -17,7 +18,9 @@ const initialState = { status: "connecting", phones: 0, kiosks: 0, handoff: null
 
 export function usePhotoSync(photoId, role) {
   const socketRef = useRef(null);
-  const lastPull = useRef(0);
+  const motionSender = useRef(null);
+  const motionListeners = useRef(new Set());
+  const motionStats = useRef({count:0,lastAt:0,maxGap:0,totalGap:0});
   const [state, setState] = useLoggedState("usePhotoSync.state", initialState);
   useEffect(() => {
     setState(initialState);
@@ -50,7 +53,25 @@ export function usePhotoSync(photoId, role) {
         if (stopped) return;
         let message;
         try { message = JSON.parse(event.data); } catch { logEvent("socket.invalid-message", { bytes: event.data?.length }, "warn"); return; }
-        logEvent("socket.message", { photoId, role, message });
+        const motion = message.type === "takeaway:interaction";
+        const pull = motion && message.action === "pull";
+        logEvent("socket.message", { photoId, role, message }, "info", {console:!pull});
+        if(motion) {
+          if(message.action==="grab")motionStats.current={count:0,lastAt:0,maxGap:0,totalGap:0};
+          if(pull) {
+            const stats=motionStats.current,now=performance.now();
+            if(stats.lastAt){const gap=now-stats.lastAt;stats.maxGap=Math.max(stats.maxGap,gap);stats.totalGap+=gap;}
+            stats.count++;stats.lastAt=now;
+          }
+          for(const listener of motionListeners.current) {
+            try { listener(message); } catch(error) {logEvent("socket.motion-handler-failed",{error},"error");}
+          }
+          if(["detach","cancel"].includes(message.action) && motionStats.current.count) {
+            const stats=motionStats.current;
+            logEvent("socket.motion-summary",{received:stats.count,meanGapMs:Math.round(stats.totalGap/Math.max(1,stats.count-1)),maxGapMs:Math.round(stats.maxGap)});
+          }
+          if(pull)return; // Motion updates bypass React and its state logging.
+        }
         setState((current) => {
           if (message.type === "session") return {
             ...current, status: "connected", phones: message.phones, kiosks: message.kiosks,
@@ -64,6 +85,7 @@ export function usePhotoSync(photoId, role) {
       });
       socket.addEventListener("error", () => logEvent("socket.error", { photoId, role }, "error"));
       socket.addEventListener("close", (event) => {
+        motionSender.current?.clear();
         logEvent("socket.closed", { photoId, role, code: event.code, reason: event.reason, stopped });
         if (stopped) return;
         setState((current) => ({ ...current, status: "reconnecting" }));
@@ -71,16 +93,25 @@ export function usePhotoSync(photoId, role) {
       });
     };
     connect();
-    return () => { logEvent("socket.cleanup", { photoId, role }); stopped = true; timers.clearTimeout(reconnect); socketRef.current?.close(); };
+    return () => { logEvent("socket.cleanup", { photoId, role }); stopped = true; motionSender.current?.clear(); timers.clearTimeout(reconnect); socketRef.current?.close(); };
   }, [photoId, role]);
+  const subscribeTakeawayInteraction = useCallback((listener) => {
+    motionListeners.current.add(listener);
+    return () => motionListeners.current.delete(listener);
+  },[]);
   const sendTakeawayInteraction = useCallback((interaction) => {
-    if (role !== "phone" || socketRef.current?.readyState !== WebSocket.OPEN) return;
-    if (interaction.action === "pull" && performance.now() - lastPull.current < 60) return;
-    if (interaction.action === "pull") lastPull.current = performance.now();
-    logEvent("socket.send", {type:"takeaway:interaction",...interaction});
-    socketRef.current.send(JSON.stringify({type:"takeaway:interaction",...interaction}));
-  }, [role]);
-  return { ...state, sendTakeawayInteraction, phoneConnected: state.status === "connected" && state.phones > 0 };
+    if(role!=="phone")return;
+    if(!motionSender.current)motionSender.current=createLatestMotionSender({
+      isOpen:()=>socketRef.current?.readyState===WebSocket.OPEN,
+      bufferedAmount:()=>socketRef.current?.bufferedAmount||0,
+      send:(value)=>{
+        logEvent("socket.send",{type:"takeaway:interaction",...value},"info",{console:value.action!=="pull"});
+        socketRef.current.send(JSON.stringify({type:"takeaway:interaction",...value}));
+      },
+    });
+    motionSender.current.send(interaction);
+  },[role]);
+  return { ...state, sendTakeawayInteraction, subscribeTakeawayInteraction, phoneConnected: state.status === "connected" && state.phones > 0 };
 }
 
 // A new recipient gets a sequence: tablet exit, phone arrival, tablet restoration.

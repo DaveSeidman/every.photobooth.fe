@@ -32,13 +32,13 @@ export function sanitize(value, depth = 0, seen = new WeakSet()) {
     (sensitive.test(key) || (key === "label" && value.settings && value.capabilities)) ? (item ? "[redacted]" : item) : sanitize(item, depth + 1, seen)]));
 }
 
-export function logEvent(event, details = {}, level = "info") {
+export function logEvent(event, details = {}, level = "info", options = {}) {
   // Diagnostics must never interrupt camera capture or generation.
   try {
     const record = { sequence: ++sequence, timestamp: new Date().toISOString(), elapsedMs: Math.round(performance.now()), session, event, level, details: sanitize(details) };
     if (records.length >= LIMIT) { records.splice(0, 1000); dropped += 1000; }
     records.push(record);
-    (level === "error" ? console.error : level === "warn" ? console.warn : console.debug)(`[booth #${record.sequence}] ${event}`, record);
+    if(options.console !== false) (level === "error" ? console.error : level === "warn" ? console.warn : console.debug)(`[booth #${record.sequence}] ${event}`, record);
     return record;
   } catch { return undefined; }
 }

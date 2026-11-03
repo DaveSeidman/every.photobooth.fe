@@ -60,7 +60,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       emit("pull", pull);
       if (performance.now() - drag.loggedAt > 100) {
         drag.loggedAt = performance.now();
-        logEvent("ticket.pull", { label: button.textContent, progress: pull.progress });
+        logEvent("ticket.pull", { label: button.textContent, progress: pull.progress }, "info", {console:false});
       }
     };
     const detach = (method, pull) => {
