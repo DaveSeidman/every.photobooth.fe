@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { timers } from "../lib/timers.js";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useEffect, useRef } from "react";
 
 function progressCopy(progress) {
   if (progress < 28) return "Preparing the portrait";
@@ -59,8 +61,13 @@ function PixelStorm({ source, result, active, onComplete }) {
       noiseY: Math.random() * Math.PI * 2,
       noiseRate: 0.45 + Math.random() * 2.4,
       noiseRate2: 0.35 + Math.random() * 1.8,
-      noiseAmount: 0.2 + Math.random() * 0.8,
-      colorDelay: Math.random() * 500,
+      noiseAmount: 1.4 + Math.random() * 3.8,
+      gravityScale: 0.65 + Math.random() * 0.8,
+      launchDelay: Math.random() * 450,
+      // Short individual fades distributed across the whole color phase.
+      // Each pixel begins docking on its own schedule after its color settles.
+      colorDelay: Math.random() * (COLOR_MS - 450),
+      colorDuration: 200 + Math.random() * 250,
       dockDelay: Math.random() * DOCK_STAGGER_MS,
       size: 0.8 + Math.random() * 0.55,
     }));
@@ -117,16 +124,19 @@ function PixelStorm({ source, result, active, onComplete }) {
       const radial = Math.max(1, Math.hypot(dx, dy));
       const inwardX = -dx / radial; const inwardY = -dy / radial;
       const coherence = sampleVelocityField(x, y);
-      const turn = coherence * 0.12 + (Math.random() - 0.5) * 0.07;
+      const turn = coherence * 0.65 + (Math.random() - 0.5) * 1.1;
       const inwardTurnX = inwardX * Math.cos(turn) - inwardY * Math.sin(turn);
       const inwardTurnY = inwardX * Math.sin(turn) + inwardY * Math.cos(turn);
       const orbitalSpeed = Math.sqrt(GRAVITY / Math.max(9, radial));
-      const radialSpeed = orbitalSpeed * (0.72 + (Math.random() - 0.5) * 0.08);
-      const tangentSpeed = orbitalSpeed * (0.58 + coherence * 0.06 + (Math.random() - 0.5) * 0.03);
-      positions[p] = x; positions[p + 1] = y; positions[p + 2] = (Math.random() - 0.5) * 0.8;
-      velocities[p] = inwardTurnX * radialSpeed - inwardTurnY * tangentSpeed * spinDirection;
-      velocities[p + 1] = inwardTurnY * radialSpeed + inwardTurnX * tangentSpeed * spinDirection;
-      velocities[p + 2] = coherence * orbitalSpeed * 0.95 + (Math.random() - 0.5) * orbitalSpeed * 0.25;
+      const radialSpeed = orbitalSpeed * (0.15 + Math.random() * 1.05);
+      const tangentSpeed = orbitalSpeed * (0.2 + Math.random() * 0.95);
+      // Small counter-rotating pockets and different orbital planes break up
+      // the single, tidy spiral while retaining the stone's gravitational pull.
+      const localSpin = coherence < -0.2 ? -spinDirection : spinDirection;
+      positions[p] = x; positions[p + 1] = y; positions[p + 2] = (Math.random() - 0.5) * 6;
+      velocities[p] = inwardTurnX * radialSpeed - inwardTurnY * tangentSpeed * localSpin;
+      velocities[p + 1] = inwardTurnY * radialSpeed + inwardTurnX * tangentSpeed * localSpin;
+      velocities[p + 2] = (coherence * 1.6 + (Math.random() - 0.5) * 1.4) * orbitalSpeed;
     }
     let frame;
     let disposed = false;
@@ -164,12 +174,12 @@ function PixelStorm({ source, result, active, onComplete }) {
       const ctxs = canvases.map((canvas) => canvas?.getContext("2d"));
       ctxs.forEach((ctx) => ctx?.clearRect(0, 0, width, height));
       const time = elapsed / 1000;
-      const launch = smooth(clamp01(elapsed / DRIFT_MS));
       const mu = GRAVITY;
       for (let i = 0; i < count; i += 1) {
         const p = i * 3;
         const particle = particlesRef.current[i];
-        const dock = afterReady === null ? 0 : reduceMotion ? 1 : smooth(clamp01((afterReady - COLOR_MS - particle.dockDelay) / DOCK_DURATION_MS));
+        const dock = afterReady === null ? 0 : reduceMotion ? 1 : smooth(clamp01((afterReady - particle.colorDelay - particle.colorDuration - particle.dockDelay) / DOCK_DURATION_MS));
+        const launch = reduceMotion ? 0 : smooth(clamp01((elapsed - particle.launchDelay) / (DRIFT_MS - particle.launchDelay)));
         if (dock >= 0.999) {
           positions[p] = i % GRID_W + 0.5;
           positions[p + 1] = Math.floor(i / GRID_W) + 0.5;
@@ -180,12 +190,13 @@ function PixelStorm({ source, result, active, onComplete }) {
         const rx = positions[p] - GRID_W / 2;
         const ry = positions[p + 1] - GRID_H / 2;
         const rz = positions[p + 2];
-        const distanceSq = rx * rx + ry * ry + rz * rz + 16;
-        const gravity = mu / (distanceSq * Math.sqrt(distanceSq)) * launch * (1 - dock);
+        const distanceSq = rx * rx + ry * ry + rz * rz + 36;
+        const gravity = mu * particle.gravityScale / (distanceSq * Math.sqrt(distanceSq)) * launch * (1 - dock);
         const phase = time * particle.noiseRate + particle.phase;
-        let ax = -rx * gravity + Math.sin(phase) * particle.noiseAmount * launch;
-        let ay = -ry * gravity + Math.cos(phase * 0.83 + particle.phase2) * particle.noiseAmount * launch;
-        let az = -rz * gravity + Math.sin(phase * 0.57 + particle.noiseY) * particle.noiseAmount * launch;
+        const turbulence = particle.noiseAmount * launch * (1 - dock);
+        let ax = -rx * gravity + (Math.sin(phase) + Math.sin(ry * 0.16 + time * 0.6 + particle.noiseX)) * turbulence;
+        let ay = -ry * gravity + (Math.cos(phase * 0.83 + particle.phase2) + Math.cos(rx * 0.13 - time * 0.45 + particle.noiseY)) * turbulence;
+        let az = -rz * gravity + Math.sin(phase * particle.noiseRate2 + particle.noiseY) * turbulence * 1.6;
         if (dock > 0) {
           const tx = i % GRID_W + 0.5; const ty = Math.floor(i / GRID_W) + 0.5;
           const dockForce = dock * 10;
@@ -215,14 +226,14 @@ function PixelStorm({ source, result, active, onComplete }) {
         const particle = particlesRef.current[i];
         const p = i * 3;
         const x = i % GRID_W + 0.5; const y = Math.floor(i / GRID_W) + 0.5;
-        const dock = afterReady === null ? 0 : reduceMotion ? 1 : smooth(clamp01((afterReady - COLOR_MS - particle.dockDelay) / DOCK_DURATION_MS));
+        const dock = afterReady === null ? 0 : reduceMotion ? 1 : smooth(clamp01((afterReady - particle.colorDelay - particle.colorDuration - particle.dockDelay) / DOCK_DURATION_MS));
         const drawX = positions[p] * (1 - dock) + x * dock;
         const drawY = positions[p + 1] * (1 - dock) + y * dock;
         const z = positions[p + 2] * (1 - dock);
         const perspective = cameraDistance / Math.max(28, cameraDistance - z);
         const screenX = GRID_W / 2 + (drawX - GRID_W / 2) * perspective;
         const screenY = GRID_H / 2 + (drawY - GRID_H / 2) * perspective - z * 0.3;
-        const colorMix = reduceMotion ? 1 : smooth(clamp01((colorElapsed - particle.colorDelay) / (COLOR_MS - 500)));
+        const colorMix = reduceMotion ? 1 : smooth(clamp01((colorElapsed - particle.colorDelay) / particle.colorDuration));
         const ctx = ctxs[z > 0 ? 1 : 0];
         if (!ctx) continue;
         const shade = z > 0 ? 1 + Math.min(0.16, z / 240) : 0.8 + Math.max(-0.12, z / 320);
@@ -257,15 +268,15 @@ function PixelStorm({ source, result, active, onComplete }) {
 }
 
 export default function Processing({ progress, result, source, style, onComplete }) {
-  const [stormComplete, setStormComplete] = useState(false);
+  const [stormComplete, setStormComplete] = useLoggedState("Processing.stormComplete", false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   useEffect(() => {
     if (!stormComplete) return undefined;
-    const timer = window.setTimeout(() => onCompleteRef.current?.(), 900);
-    return () => window.clearTimeout(timer);
+    const timer = timers.setTimeout(() => onCompleteRef.current?.(), 900);
+    return () => timers.clearTimeout(timer);
   }, [stormComplete]);
 
   return (

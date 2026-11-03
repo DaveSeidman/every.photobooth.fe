@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useRef } from "react";
 
 const snacks = ["●", "▲", "✦", "◆"];
 
 export default function PosthogWorld({ image, label = "Your paper twin" }) {
   const nextSnack = useRef(0);
-  const [food, setFood] = useState([]);
+  const [food, setFood] = useLoggedState("PosthogWorld.food", []);
 
   const dropFood = (event) => {
     const bounds = event.currentTarget.getBoundingClientRect();

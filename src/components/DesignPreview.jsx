@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { defaultExperience } from "../config.js";
 import KioskChrome from "./KioskChrome.jsx";
@@ -20,8 +21,8 @@ const original = `${import.meta.env.BASE_URL}thesis/img/profile.svg`;
 export default function DesignPreview() {
   const { screen: requested = "attract" } = useParams();
   const screen = screens.some(([id]) => id === requested) ? requested : "attract";
-  const [style, setStyle] = useState(defaultExperience.everyStyles[3]);
-  const [replay, setReplay] = useState(0);
+  const [style, setStyle] = useLoggedState("DesignPreview.style", defaultExperience.everyStyles[3]);
+  const [replay, setReplay] = useLoggedState("DesignPreview.replay", 0);
   const go = (id) => { window.location.hash = `/preview/${id}`; };
   const sync = useMemo(() => ({
     status: "connected", phones: screen === "connected" ? 1 : 0,

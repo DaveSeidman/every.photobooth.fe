@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { downloadLogs, clearLogs, logEvent } from "./lib/logger.js";
+import { timers } from "./lib/timers.js";
+import { useLoggedState } from "./hooks/useLoggedState.js";
+import { useCallback, useEffect, useRef } from "react";
 import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 import { button, Leva, useControls } from "leva";
 import { flushSync } from "react-dom";
 import { fetchExperience, photoUrl, submitPhoto } from "./api.js";
 import { appConfig, defaultExperience } from "./config.js";
+import CameraDebug from "./components/CameraDebug.jsx";
+import { defaultFraming } from "./lib/cameraFraming.js";
 import Camera from "./components/Camera.jsx";
 import CaptureReview from "./components/CaptureReview.jsx";
 import KioskChrome from "./components/KioskChrome.jsx";
@@ -22,22 +27,34 @@ function replaceHash(path) {
 
 function Booth() {
   const cameraRef = useRef(null);
+  const [cameraDiagnostics, setCameraDiagnostics] = useLoggedState("App.cameraDiagnostics", null);
+  const [framing, setFraming] = useLoggedState("App.framing", () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("booth-camera-framing"));
+      return Object.fromEntries(Object.entries(defaultFraming).map(([key, fallback]) => [key,
+        Number.isFinite(saved?.[key]) ? Math.max(key === "zoom" ? 1 : 0, Math.min(key === "zoom" ? 3 : 100, saved[key])) : fallback]));
+    } catch { return { ...defaultFraming }; }
+  });
+  const updateFraming = (value) => {
+    setFraming(value);
+    try { localStorage.setItem("booth-camera-framing", JSON.stringify(value)); } catch { /* Private browsing may disable storage. */ }
+  };
   const resetTimerRef = useRef(null);
   const transitionTimerRef = useRef(null);
   const captureStartedRef = useRef(false);
   const processPhotoRef = useRef(null);
-  const [phase, setPhase] = useState("attract");
-  const [cameraStatus, setCameraStatus] = useState("idle");
-  const [count, setCount] = useState(appConfig.countdownSeconds);
-  const [captureBlob, setCaptureBlob] = useState(null);
-  const [originalPhoto, setOriginalPhoto] = useState(null);
-  const [selectedStyle, setSelectedStyle] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-  const [experience, setExperience] = useState(defaultExperience);
-  const [timeoutVersion, setTimeoutVersion] = useState(0);
-  const [showPromptControls, setShowPromptControls] = useState(false);
+  const [phase, setPhase] = useLoggedState("App.phase", "attract");
+  const [cameraStatus, setCameraStatus] = useLoggedState("App.cameraStatus", "idle");
+  const [count, setCount] = useLoggedState("App.count", appConfig.countdownSeconds);
+  const [captureBlob, setCaptureBlob] = useLoggedState("App.captureBlob", null);
+  const [originalPhoto, setOriginalPhoto] = useLoggedState("App.originalPhoto", null);
+  const [selectedStyle, setSelectedStyle] = useLoggedState("App.selectedStyle", null);
+  const [progress, setProgress] = useLoggedState("App.progress", 0);
+  const [result, setResult] = useLoggedState("App.result", null);
+  const [error, setError] = useLoggedState("App.error", "");
+  const [experience, setExperience] = useLoggedState("App.experience", defaultExperience);
+  const [timeoutVersion, setTimeoutVersion] = useLoggedState("App.timeoutVersion", 0);
+  const [showPromptControls, setShowPromptControls] = useLoggedState("App.showPromptControls", false);
   const { promptOverride } = useControls("Generation", {
     promptOverride: {
       value: "",
@@ -57,7 +74,29 @@ function Booth() {
     }),
   }, [Boolean(captureBlob)]);
 
+  useEffect(() => {
+    logEvent("generation.settings", { customPrompt: Boolean(promptOverride?.trim()), promptCharacters: promptOverride?.length || 0 });
+  }, [promptOverride]);
+
+  const { failureSimulation } = useControls("Fallback testing", {
+    failureSimulation: {
+      value: "none",
+      label: "Simulate",
+      options: { "Normal operation": "none", "No internet (AI only)": "offline", "AI generation error": "error", "AI generation timeout (2×)": "timeout" },
+    },
+  });
+
+  useEffect(() => {
+    logEvent("generation.failure-simulation", { failureSimulation });
+  }, [failureSimulation]);
+
+  useControls("Diagnostics", {
+    "Download logs": button(downloadLogs),
+    "Clear logs": button(clearLogs),
+  });
+
   const transitionTo = useCallback((nextPhase) => {
+    logEvent("flow.transition-requested", { nextPhase });
     if (!document.startViewTransition) {
       setPhase(nextPhase);
       return;
@@ -83,8 +122,8 @@ function Booth() {
   }, []);
 
   const clearTimers = () => {
-    if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
-    if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
+    if (resetTimerRef.current) timers.clearTimeout(resetTimerRef.current);
+    if (transitionTimerRef.current) timers.clearTimeout(transitionTimerRef.current);
     resetTimerRef.current = null;
     transitionTimerRef.current = null;
   };
@@ -98,6 +137,7 @@ function Booth() {
   };
 
   const reset = useCallback((toAttract = true) => {
+    logEvent("flow.reset", { toAttract });
     clearTimers();
     clearCapture();
     setSelectedStyle(null);
@@ -116,9 +156,10 @@ function Booth() {
   }, []);
 
   const refreshResultTimeout = useCallback(() => {
-    if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+    logEvent("flow.reset-timer-refreshed", { delayMs: appConfig.resetDelayMs });
+    if (resetTimerRef.current) timers.clearTimeout(resetTimerRef.current);
     setTimeoutVersion((version) => version + 1);
-    resetTimerRef.current = window.setTimeout(() => reset(true), appConfig.resetDelayMs);
+    resetTimerRef.current = timers.setTimeout(() => reset(true), appConfig.resetDelayMs);
   }, [reset]);
 
   useEffect(() => () => {
@@ -152,13 +193,13 @@ function Booth() {
   useEffect(() => {
     if (phase !== "countdown") return undefined;
     if (count > 0) {
-      const timer = window.setTimeout(() => setCount((value) => value - 1), 1000);
-      return () => window.clearTimeout(timer);
+      const timer = timers.setTimeout(() => setCount((value) => value - 1), 1000);
+      return () => timers.clearTimeout(timer);
     }
     if (captureStartedRef.current) return undefined;
     captureStartedRef.current = true;
     setPhase("flash");
-    transitionTimerRef.current = window.setTimeout(() => {
+    transitionTimerRef.current = timers.setTimeout(() => {
       cameraRef.current.capture()
         .then(acceptCapture)
         .catch((captureError) => {
@@ -172,11 +213,11 @@ function Booth() {
   useEffect(() => {
     if (phase !== "processing") return undefined;
     const startedAt = Date.now();
-    const timer = window.setInterval(() => {
+    const timer = timers.setInterval(() => {
       const elapsedSeconds = (Date.now() - startedAt) / 1000;
       setProgress((current) => current >= 100 ? current : Math.min(92, Math.round(8 + elapsedSeconds * 7.2)));
     }, 250);
-    return () => window.clearInterval(timer);
+    return () => timers.clearInterval(timer);
   }, [phase]);
 
   const retake = async () => {
@@ -205,6 +246,7 @@ function Booth() {
         mode: "every",
         style: style.id,
         promptOverride,
+        failureSimulation,
       });
       const output = response.output;
       setProgress(100);
@@ -214,6 +256,7 @@ function Booth() {
         mode: output.mode,
         styleProfile: output.styleProfile,
         styleLabel: output.styleLabel || style.label,
+        generationMode: output.generationMode,
       });
     } catch (requestError) {
       setError(requestError.message);
@@ -234,8 +277,11 @@ function Booth() {
   return (
     <main className={`booth booth--${phase} booth--mode-every`} data-testid="booth">
       {!['results', 'resetting'].includes(phase) && <DeveloperScreenLabel name={screenLabels[phase]} />}
-      <Leva hidden={!showPromptControls} collapsed={false} titleBar={{ title: "Prompt override" }} />
-      <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} />
+      <aside hidden={!showPromptControls} className="developer-controls" aria-label="Developer controls">
+        <Leva hidden={!showPromptControls} fill collapsed={false} titleBar={{ title: "Developer controls", drag: false }} />
+        <CameraDebug cameraRef={cameraRef} diagnostics={cameraDiagnostics} framing={framing} onFramingChange={updateFraming} disabled={cameraStatus === "requesting" || !["attract", "camera"].includes(phase)} />
+      </aside>
+      <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} onDiagnostics={setCameraDiagnostics} />
       {phase !== "results" && <KioskChrome phase={phase} cameraStatus={cameraStatus} />}
 
       {phase === "attract" && (
@@ -312,10 +358,10 @@ function Booth() {
         <Results
           result={result}
           onReset={() => {
-            if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+            if (resetTimerRef.current) timers.clearTimeout(resetTimerRef.current);
             resetTimerRef.current = null;
             setPhase("resetting");
-            transitionTimerRef.current = window.setTimeout(() => reset(true), 450);
+            transitionTimerRef.current = timers.setTimeout(() => reset(true), 450);
           }}
           isResetting={phase === "resetting"}
           onActivity={refreshResultTimeout}

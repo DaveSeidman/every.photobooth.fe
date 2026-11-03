@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { logEvent } from "../lib/logger.js";
+import { timers } from "../lib/timers.js";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useEffect, useRef } from "react";
 
 const ANALYSIS_WIDTH = 160;
 const ANALYSIS_HEIGHT = 256;
@@ -7,7 +10,7 @@ const COLORS = ["238,247,255", "238,247,255", "130,212,255", "74,174,255"];
 
 export default function FaceFlowParticles({ videoRef, active, ready }) {
   const canvasRef = useRef(null);
-  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [reducedMotion, setReducedMotion] = useLoggedState("FaceFlowParticles.reducedMotion", () => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const enabled = active && ready && !reducedMotion;
 
   useEffect(() => {
@@ -23,14 +26,15 @@ export default function FaceFlowParticles({ videoRef, active, ready }) {
     if (!context) return undefined;
     if (!enabled) {
       canvas.dataset.effectState = "fading";
-      const timeout = window.setTimeout(() => {
+      const timeout = timers.setTimeout(() => {
         context.clearRect(0, 0, canvas.width, canvas.height);
         canvas.dataset.effectState = "inactive";
         canvas.dataset.particleCount = "0";
       }, 900);
-      return () => window.clearTimeout(timeout);
+      return () => timers.clearTimeout(timeout);
     }
     if (!window.Worker || !window.OffscreenCanvas || !window.createImageBitmap) {
+      logEvent("face-flow.unavailable");
       canvas.dataset.effectState = "unavailable";
       return undefined;
     }
@@ -61,19 +65,21 @@ export default function FaceFlowParticles({ videoRef, active, ready }) {
 
     worker.onmessage = ({ data }) => {
       if (stopped) return;
-      if (data.type === "ready") { workerReady = true; canvas.dataset.effectState = "tracking"; }
+      if (data.type === "ready") { logEvent("face-flow.ready"); workerReady = true; canvas.dataset.effectState = "tracking"; }
       if (data.type === "flow") {
         faces = data.faces; busy = false; lastFaceTime = performance.now();
         canvas.dataset.faceCount = String(faces.length);
       }
       if (data.type === "error") {
+        logEvent("face-flow.failed", { message: data.message }, "error");
         faces = []; busy = false; workerReady = false;
         canvas.dataset.effectState = "unavailable";
         canvas.dataset.effectError = data.message;
         worker.terminate();
       }
     };
-    worker.onerror = () => {
+    worker.onerror = (event) => {
+      logEvent("face-flow.worker-error", { message: event.message }, "error");
       faces = []; busy = false; workerReady = false;
       canvas.dataset.effectState = "unavailable";
       worker.terminate();

@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { timers } from "../lib/timers.js";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { photoUrl, takeawayUrl } from "../api.js";
 import { useHandoffTiming, usePhotoSync } from "../hooks/usePhotoSync.js";
@@ -11,14 +13,14 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
   const originalUrl = result.original || photoUrl(`${result.photoId}-source`);
   const liveSync = usePhotoSync(previewSync ? null : result.photoId, "kiosk");
   const sync = previewSync || liveSync;
-  const [secondsLeft, setSecondsLeft] = useState(Math.ceil(timeoutMs / 1000));
+  const [secondsLeft, setSecondsLeft] = useLoggedState("Results.secondsLeft", Math.ceil(timeoutMs / 1000));
   useEffect(() => {
     const deadline = Date.now() + timeoutMs;
     const update = () => setSecondsLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
     update();
     if (!onActivity) return;
-    const timer = window.setInterval(update, 250);
-    return () => window.clearInterval(timer);
+    const timer = timers.setInterval(update, 250);
+    return () => timers.clearInterval(timer);
   }, [timeoutVersion, timeoutMs, onActivity]);
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset);
   const screen = sync.handoff && (!timing.started || timing.active)

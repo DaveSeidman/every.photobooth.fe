@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { timers } from "../lib/timers.js";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { appConfig, defaultExperience } from "../config.js";
 import { photoUrl } from "../api.js";
@@ -9,11 +11,11 @@ export default function Takeaway() {
   const { photoId } = useParams();
   const [searchParams] = useSearchParams();
   const fallback = searchParams.get("fallback") === "1";
-  const [sharing, setSharing] = useState(false);
-  const [message, setMessage] = useState("");
-  const [revealed, setRevealed] = useState(false);
-  const [imageStatus, setImageStatus] = useState("loading");
-  const [retry, setRetry] = useState(0);
+  const [sharing, setSharing] = useLoggedState("Takeaway.sharing", false);
+  const [message, setMessage] = useLoggedState("Takeaway.message", "");
+  const [revealed, setRevealed] = useLoggedState("Takeaway.revealed", false);
+  const [imageStatus, setImageStatus] = useLoggedState("Takeaway.imageStatus", "loading");
+  const [retry, setRetry] = useLoggedState("Takeaway.retry", 0);
   const imageRef = useRef(null);
   const previewStyle = defaultExperience.everyStyles.find((style) => style.id === searchParams.get("style")) || defaultExperience.everyStyles[2];
   const stillUrl = fallback ? previewStyle.preview : (photoId ? photoUrl(photoId) : null);
@@ -44,7 +46,7 @@ export default function Takeaway() {
         const anchor = document.createElement("a");
         anchor.href = objectUrl; anchor.download = file.name;
         document.body.append(anchor); anchor.click(); anchor.remove();
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        timers.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       }
     } catch (error) {
       if (error.name !== "AbortError") setMessage(error.message);

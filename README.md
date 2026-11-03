@@ -58,3 +58,32 @@ The included Pages workflow builds from `main`, publishes the app at `/every/`, 
 6. Push `main` or run the workflow manually, then enable **Enforce HTTPS** after GitHub issues the certificate.
 
 The Render backend must include `https://photobooth.lightboxlive.io` in `ALLOWED_ORIGINS` for both API and WebSocket access.
+
+### iPad layout and on-site camera framing
+
+The booth fills the viewport, with portrait as the primary iPad layout and a landscape fallback. For permission-free layout checks open `/#/preview/attract`, then select each screen using the preview toolbar. Useful portrait viewport sizes: 768×1024, 820×1180, 834×1194, and 1024×1366.
+
+On the live booth, press **F1** to show developer controls, then expand **Camera**. Press **F1** again to hide the entire panel. Camera adjustments are enabled on the welcome and camera screens. Digital zoom and horizontal/vertical framing affect both the mirrored live preview and the captured square photo. These settings persist in this browser’s local storage, including across booth resets; **Reset framing** restores defaults. Digital zoom crops pixels and reduces resolution. Horizontal framing is expressed in camera coordinates (the preview is mirrored). At 1×, movement is limited to the source area outside the square crop; zoom in to gain room on both axes.
+
+Hardware pan/tilt/zoom sliders appear only when the active video track reports usable capability ranges. **Request PTZ / reconnect** restarts the camera with PTZ constraints so supporting browsers can request permission. iPad hardware/browser combinations may expose none of these controls; digital framing remains available. Hardware settings are not persisted. Use **Log camera diagnostics** to record actual settings and capabilities in the diagnostic logs.
+
+Camera access requires a secure context. Desktop `http://localhost:8080` works, but an iPad visiting `http://<computer-LAN-IP>:8080` cannot access its camera. Use an HTTPS deployment or a trusted HTTPS development proxy/tunnel for live iPad testing.
+
+### Diagnostic logs
+
+Structured logs run in development and production. Open the browser console and enable **Verbose/Debug** to see `[booth #…]` entries. Press **F1**, expand **Diagnostics**, and choose **Download logs** for a JSON export, or **Clear logs** to start a fresh recording. The console also exposes `window.boothLogs.get()`, `.download()`, and `.clear()`.
+
+Entries include UTC timestamps, elapsed time, session IDs, user input events (without text input contents), committed React state changes, app timer scheduling/firing/cancellation, fetch metadata and sanitized API payloads, camera lifecycle and captures, WebSocket messages/reconnects, resource loads, and browser lifecycle/errors. Animation frames and per-pixel particle calculations are excluded. Photo bytes, prompt text, credentials and camera device identifiers are redacted. Logs are kept in memory, capped at 10,000 entries; older entries are dropped in batches and counted in the export. Download before refreshing or closing the page.
+
+Backend stdout contains structured HTTP request start/completion/disconnect logs and generation milestones. `X-Request-Id` connects backend requests to frontend `fetch.response` records. Backend logs contain timing and photo IDs, without uploaded images or generation prompts.
+
+The local Mac backend now applies classic photo filters if either AI treatment fails or exceeds twice the normal generation duration. The normal duration starts at 17 seconds and learns from recent successful AI calls. Each capture refreshes the deadline from `/config`, and the frontend timeout allows 15 additional seconds for the local result to arrive. Classic treatments are identified in the returned style label. This requires the iPad to retain its local connection to the Mac; it is not a browser-only fallback for an unreachable backend.
+
+F1 → **Fallback testing → Simulate** can select **No internet (AI only)**,
+**AI generation error**, or **AI generation timeout (2×)**. The selection applies
+on each new capture until switched back to **Normal operation** (or page reload).
+These tests bypass all paid AI requests on the Mac, keeping the local connection
+and printing active. Timeout uses the real adaptive fallback deadline. The
+internet simulation tests AI unavailability, not loss of the iPad-to-Mac LAN or
+cold-loading an uncached website without internet. Normal automatic printing
+still applies to simulated captures.

@@ -1,0 +1,108 @@
+// Keep the printed stamp artwork, while sizing the composition to the viewport.
+html, body, #root { height: 100%; min-height: 100%; background: #121212; }
+#root { height: 100dvh; }
+button, select, input { touch-action: manipulation; }
+.booth--mode-every {
+  width: 100%; height: 100%; min-height: 540px;
+  --stage-width: min(72vw, 51dvh, calc((83dvh - var(--stage-top) - 16px) / 1.21212));
+  --stage-left: calc((100% - var(--stage-width)) / 2);
+  --header-top: clamp(20px, 3.5dvh, 40px);
+  --logo-height: clamp(22px, 4dvh, 40px);
+  --title-height: calc(var(--type-size) * 2.2 + 4px);
+  --header-gap: clamp(16px, 2.5dvh, 28px);
+  --stage-top: calc(var(--title-top) + var(--title-height) + clamp(12px, 2dvh, 24px));
+  --image-size: calc(var(--stage-width) * .91515);
+  --stamp-inset: calc(var(--stage-width) * .04242);
+  --title-top: calc(var(--header-top) + var(--logo-height) + var(--header-gap)); --title-left: 0%; --title-width: 100%;
+  --actions-top: 85%; --actions-left: 8%; --actions-width: 84%;
+  --type-size: clamp(28px, 4.7vw, 64px);
+  .thesis-chrome__wordmark { left: 50%; top: max(var(--header-top), env(safe-area-inset-top)); transform: translateX(-50%); width: clamp(120px, 22vw, 210px); height: var(--logo-height); object-fit: contain; }
+  .thesis-chrome__brooklyn { inset: 68% 0 0; }
+  h1 { left: var(--title-left); top: var(--title-top); width: var(--title-width); padding: 0 16px; height: var(--title-height); align-content: center; gap: 4px 12px; font-size: var(--type-size); line-height: 1.08; }
+  h1 .thesis-italic { font-size: .9em; }
+  .primary-button, .secondary-button, .shutter-button {
+    width: min(100%, 300px); height: clamp(52px, 7dvh, 76px); padding: 8px 14px;
+    font-size: clamp(20px, 2.7vw, 32px); line-height: 1.15;
+  }
+  .camera { left: calc(var(--stage-left) + var(--stamp-inset)); top: calc(var(--stage-top) + var(--stamp-inset)); width: var(--image-size); height: var(--image-size); overflow: hidden; }
+  .camera__frame { position: absolute; inset: 0; overflow: hidden; transform: scaleX(-1); }
+  .camera .camera__frame video { position: absolute; max-width: none; transform: none; }
+  &.booth--attract::before, &.booth--camera::before, &.booth--countdown::before, &.booth--flash::before, &.booth--error:has(.capture-panel)::before,
+  .capture-review__stage, .processing__copy, .flow-error__portrait, .result-hero {
+    left: var(--stage-left); top: var(--stage-top); width: var(--stage-width); height: calc(var(--stage-width) * 1.21212);
+  }
+  .attract-panel .primary-button, .capture-panel__actions, .capture-review__actions, .flow-error__actions, .results__actions {
+    left: var(--actions-left); top: var(--actions-top); width: var(--actions-width); display: flex; justify-content: center; gap: 12px;
+  }
+  .capture-review__actions > button, .flow-error__actions > button { width: calc((100% - 12px) / 2); }
+  .attract-panel .primary-button { left: calc(var(--actions-left) + (var(--actions-width) - min(var(--actions-width), 300px)) / 2); width: min(var(--actions-width), 300px); }
+  .capture-panel .error-message { left: 8%; top: 73%; width: 84%; padding: 12px; font-size: 16px; line-height: 1.3; }
+  .countdown__wash, .countdown strong { left: calc(var(--stage-left) + var(--stamp-inset)); top: calc(var(--stage-top) + var(--stamp-inset)); width: var(--image-size); height: var(--image-size); }
+  .countdown strong { font-size: calc(var(--stage-width) * .65); }
+  .capture-review__stage img, .flow-error__portrait img, .processing__art, .processing__copy::before, .result-hero__images {
+    left: 4.242%; top: 3.5%; width: 91.515%; height: 75.5%;
+  }
+  .stamp-caption, .flow-error__portrait p, .result-hero figcaption {
+    left: 4.242%; top: 79%; width: 91.515%; height: 15%; font-size: clamp(18px, 2.5vw, 28px); line-height: 1.15;
+  }
+  .processing__copy h1 { left: calc((var(--stage-width) - 100vw) / 2); top: calc(var(--title-top) - var(--stage-top)); width: 100vw; font-size: var(--type-size); }
+  .processing__copy { position: absolute; }
+  .progress { left: 4.242%; top: 78.25%; width: 91.515%; }
+  .progress__track, .progress__track span { height: 4px; }
+  .flow-error h1 em { font-size: .7em; }
+  .flow-error__portrait p { font-size: clamp(16px, 2vw, 24px); }
+  .style-picker__grid { left: 6%; right: 6%; top: var(--stage-top); height: calc(82dvh - var(--stage-top)); gap: clamp(12px, 2vw, 28px); }
+  .style-card { padding: 5%; display: flex; flex-direction: column; gap: 10px; }
+  .style-card img { position: static; width: 100%; height: 59%; flex: none; }
+  .style-card__copy { position: static; width: 100%; gap: 6px; }
+  .style-card strong { font-size: clamp(20px, 3vw, 34px); line-height: 1.05; }
+  .style-card__copy > span { font-size: clamp(14px, 1.7vw, 19px); line-height: 1.15; }
+  .style-picker__retake { left: calc(50% - 130px); top: 86%; width: 260px; }
+  &.booth--results, &.booth--connected, &.booth--resetting { --stage-width: min(64vw, 43dvh, calc((71dvh - var(--stage-top) - 16px) / 1.21212)); }
+  .share-card { left: 12%; top: 71%; width: 76%; height: 16%; padding: 12px; gap: 16px; }
+  .share-card__qr { width: min(14dvh, 120px); height: min(14dvh, 120px); padding: 6px; }
+  .share-card h2 { font-size: clamp(23px, 3vw, 36px); line-height: 1.05; }
+  .share-card__instruction, .share-card__connection { font-size: clamp(13px, 1.6vw, 18px); line-height: 1.15; margin: 8px 0 0; }
+  .share-card > div:last-child { transform: none; }
+  .results__actions { top: 90%; }
+  .results__actions .secondary-button { width: 45%; font-size: clamp(20px, 2.7vw, 32px); }
+  .results__reset-timer { width: 45%; height: clamp(52px, 7dvh, 76px); font-size: 12px; line-height: 1.2; padding: 10px 16px; gap: 8px; }
+  .timeout-line { height: 3px; }
+  .handoff-away { gap: 16px; font-size: clamp(24px, 4vw, 48px); line-height: 1.1; }
+  .handoff-away__star { width: 40px; height: 40px; }
+}
+@media (min-aspect-ratio: 1/1) {
+  .booth--mode-every {
+    --stage-width: min(42vw, 63dvh); --stage-left: 6%; --stage-top: 16%;
+    --title-top: 32%; --title-left: 52%; --title-width: 44%;
+    --actions-top: 63%; --actions-left: 53%; --actions-width: 42%;
+    --type-size: clamp(32px, 4.5vw, 72px);
+    h1 { height: auto; }
+    .thesis-chrome__wordmark { left: 74%; top: 12%; width: clamp(130px, 18vw, 240px); }
+    .capture-panel .error-message { left: 53%; top: 49%; width: 42%; }
+    .processing__copy h1 { left: 46vw; top: 21%; width: 44vw; }
+    .style-picker h1 { left: 4%; top: 6%; width: 70%; font-size: clamp(28px, 4vw, 48px); }
+    .style-picker__grid { top: 23%; height: 61%; left: 4%; right: 4%; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: 1fr; gap: 16px; }
+    .style-card strong { font-size: clamp(20px, 2.7vw, 34px); }
+    .style-picker__retake { top: 88%; height: 48px; }
+    &.booth--results, &.booth--connected, &.booth--resetting { --stage-width: min(42vw, 63dvh); --stage-top: 16%; --title-top: 23%; }
+    .share-card { left: 53%; top: 43%; width: 42%; height: 28%; }
+    .share-card__qr { width: min(16vw, 23dvh); height: min(16vw, 23dvh); }
+    .share-card h2 { font-size: clamp(24px, 3vw, 40px); }
+    .results__actions { top: 78%; }
+  }
+}
+@media (max-width: 480px) {
+  .booth--mode-every {
+    --stage-width: min(84vw, 51dvh, calc((83dvh - var(--stage-top) - 16px) / 1.21212));
+    .style-card__copy > span { display: none; }
+    .share-card { left: 5%; width: 90%; }
+    .share-card__qr { width: 100px; height: 100px; }
+  }
+}
+@media (max-height: 539px) {
+  html, body, #root { overflow: auto; }
+  .booth--mode-every { height: 540px; --stage-width: min(40vw, 300px); }
+}
+.developer-controls { position: fixed; z-index: 110; right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); width: min(360px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; background: #161616; border-radius: 8px; }
+.developer-controls[hidden] { display: none; }

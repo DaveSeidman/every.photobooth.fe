@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { logEvent } from "../lib/logger.js";
+import { timers } from "../lib/timers.js";
+import { useLoggedState } from "../hooks/useLoggedState.js";
+import { useEffect, useRef } from "react";
 import { appConfig } from "../config.js";
 
 function websocketUrl() {
@@ -14,7 +17,7 @@ const initialState = { status: "connecting", phones: 0, kiosks: 0, handoff: null
 
 export function usePhotoSync(photoId, role) {
   const socketRef = useRef(null);
-  const [state, setState] = useState(initialState);
+  const [state, setState] = useLoggedState("usePhotoSync.state", initialState);
   useEffect(() => {
     setState(initialState);
     if (!photoId) return undefined;
@@ -33,16 +36,20 @@ export function usePhotoSync(photoId, role) {
     const connect = () => {
       if (stopped) return;
       setState((current) => ({ ...current, status: attempts ? "reconnecting" : "connecting" }));
+      logEvent("socket.connecting", { photoId, role, attempts, url: websocketUrl() });
       const socket = new WebSocket(websocketUrl());
       socketRef.current = socket;
       socket.addEventListener("open", () => {
+        logEvent("socket.open", { photoId, role });
         attempts = 0;
+        logEvent("socket.send", { type: "join", photoId, role });
         socket.send(JSON.stringify({ type: "join", photoId, role, clientId }));
       });
       socket.addEventListener("message", (event) => {
         if (stopped) return;
         let message;
-        try { message = JSON.parse(event.data); } catch { return; }
+        try { message = JSON.parse(event.data); } catch { logEvent("socket.invalid-message", { bytes: event.data?.length }, "warn"); return; }
+        logEvent("socket.message", { photoId, role, message });
         setState((current) => {
           if (message.type === "session") return {
             ...current, status: "connected", phones: message.phones, kiosks: message.kiosks,
@@ -53,14 +60,16 @@ export function usePhotoSync(photoId, role) {
           return current;
         });
       });
-      socket.addEventListener("close", () => {
+      socket.addEventListener("error", () => logEvent("socket.error", { photoId, role }, "error"));
+      socket.addEventListener("close", (event) => {
+        logEvent("socket.closed", { photoId, role, code: event.code, reason: event.reason, stopped });
         if (stopped) return;
         setState((current) => ({ ...current, status: "reconnecting" }));
-        reconnect = window.setTimeout(connect, Math.min(5000, 400 * (2 ** attempts++)));
+        reconnect = timers.setTimeout(connect, Math.min(5000, 400 * (2 ** attempts++)));
       });
     };
     connect();
-    return () => { stopped = true; window.clearTimeout(reconnect); socketRef.current?.close(); };
+    return () => { logEvent("socket.cleanup", { photoId, role }); stopped = true; timers.clearTimeout(reconnect); socketRef.current?.close(); };
   }, [photoId, role]);
   return { ...state, phoneConnected: state.status === "connected" && state.phones > 0 };
 }
@@ -69,7 +78,7 @@ export function usePhotoSync(photoId, role) {
 // Reconnecting phones keep their own finished sequence and do not reanimate.
 export function useHandoffTiming(handoff, clockOffset = 0, device = "kiosk") {
   const empty = { started: false, animating: false, restoring: false, active: false, animationDelay: "0ms", restoreDelay: "0ms" };
-  const [timing, setTiming] = useState(empty);
+  const [timing, setTiming] = useLoggedState("usePhotoSync.timing", empty);
   useEffect(() => {
     if (!handoff) { setTiming(empty); return undefined; }
     const phoneDelay = handoff.phoneDelayMs ?? 1100;
@@ -93,8 +102,8 @@ export function useHandoffTiming(handoff, clockOffset = 0, device = "kiosk") {
     update();
     const delay = handoff.startsAt - (Date.now() + clockOffset);
     const timers = [0, exitMs, phoneDelay, phoneDelay + phoneDuration, returnDelay, returnDelay + returnDuration, handoff.durationMs]
-      .map((offset) => window.setTimeout(update, Math.max(0, delay + offset)));
-    return () => timers.forEach(window.clearTimeout);
+      .map((offset) => timers.setTimeout(update, Math.max(0, delay + offset)));
+    return () => timers.forEach(timers.clearTimeout);
   }, [handoff, clockOffset, device]);
   return timing;
 }
