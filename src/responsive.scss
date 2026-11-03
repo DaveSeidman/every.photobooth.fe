@@ -604,3 +604,50 @@ button, select, input { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) {
   .booth--mode-every .camera-photo__object::after { transition: none; }
 }
+
+// Reset releases the attachments first, then powers the live square back on.
+.booth--mode-every {
+  .camera-photo { transition: top 900ms var(--photo-ease), opacity 350ms ease; }
+  &.booth--attract .camera-photo, &.booth--resetting .camera-photo, &.booth--camera-reveal .camera-photo { top: 50%; }
+  .results-lockup--attached.is-resetting {
+    pointer-events: none;
+    .share-card, .ticket-button { pointer-events: none; }
+    .share-card { animation: reset-card-drop 650ms cubic-bezier(.45,0,.85,.45) both; }
+    .results__actions > .ticket-button:first-child { animation: reset-tab-left 560ms 70ms ease-in both; }
+    .results__actions > .results__reset-timer { animation: reset-tab-right 570ms 130ms ease-in both; }
+  }
+  .camera__reveal { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  .camera.camera--revealing {
+    overflow: hidden;
+    .camera__still { opacity: 0; transition: opacity 150ms ease; }
+    .camera__frame { visibility: visible; z-index: 6; overflow: hidden; background: #060708; }
+    .camera__reveal { animation: camera-power-on 820ms cubic-bezier(.16,1,.3,1) both; }
+  }
+}
+@keyframes reset-card-drop {
+  0% { opacity: 1; transform: translateY(0) rotate(0); }
+  70% { opacity: 1; transform: translateY(235px) rotate(4deg); }
+  100% { opacity: 0; transform: translateY(490px) rotate(8deg); }
+}
+@keyframes reset-tab-left {
+  0% { opacity: 1; transform: translateY(0) rotate(0); }
+  100% { opacity: 0; transform: translate(-20px, 450px) rotate(-14deg); }
+}
+@keyframes reset-tab-right {
+  0% { opacity: 1; transform: translateY(0) rotate(0); }
+  100% { opacity: 0; transform: translate(20px, 460px) rotate(12deg); }
+}
+@keyframes camera-power-on {
+  0% { opacity: 0; transform: scaleY(.015); filter: brightness(2.4) contrast(1.1); }
+  10% { opacity: 1; transform: scaleY(.025); }
+  58% { opacity: 1; transform: scaleY(1.035); filter: brightness(1.22) contrast(1.02); }
+  78% { transform: scaleY(.99); filter: brightness(1.06) contrast(1); }
+  100% { opacity: 1; transform: scaleY(1); filter: brightness(1) contrast(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booth--mode-every {
+    .results-lockup--attached.is-resetting .share-card,
+    .results-lockup--attached.is-resetting .results__actions > .ticket-button { animation: none; opacity: 0; }
+    .camera.camera--revealing .camera__reveal { animation: none; }
+  }
+}

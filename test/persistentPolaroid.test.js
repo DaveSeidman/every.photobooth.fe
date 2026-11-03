@@ -12,7 +12,7 @@ test('each booth phase renders one shared Polaroid and still-image slot', async 
   const vite = await createServer({server:{middlewareMode:true,hmr:false,watch:null,open:false},appType:'custom',logLevel:'silent'});
   try {
     const {default:Preview} = await vite.ssrLoadModule('/src/components/DesignPreview.jsx');
-    for (const screen of ['attract','camera','countdown','review','styles','processing','results']) {
+    for (const screen of ['attract','camera','countdown','review','styles','processing','results','resetting','camera-reveal']) {
       const markup=renderToStaticMarkup(React.createElement(MemoryRouter,{initialEntries:[`/preview/${screen}`]},React.createElement(Routes,null,React.createElement(Route,{path:'/preview/:screen',element:React.createElement(Preview)}))));
       assert.equal((markup.match(/class="camera-photo /g)||[]).length,1,`${screen}: shared frame`);
       assert.equal((markup.match(/class="camera__still"/g)||[]).length,1,`${screen}: shared image`);
@@ -23,6 +23,8 @@ test('each booth phase renders one shared Polaroid and still-image slot', async 
         assert.ok(!resultLayer.includes('class="thesis-chrome"'),'background must not enter the foreground results layer');
         assert.match(markup, /<button[^>]*class="[^"]*results__reset-timer[^"]*ticket-button/, 'reset countdown is a selectable tear-away ticket');
       }
+      if(screen==='resetting') assert.ok(markup.includes('results-lockup--attached is-resetting'),'attached controls fall away during reset');
+      if(screen==='camera-reveal') assert.ok(markup.includes('camera--revealing'),'live camera returns inside the shared frame');
       if(screen==='styles') {
         assert.ok(!markup.includes('Retake'),'style selection has no retake control');
         assert.ok(markup.includes('data-depth="back"'),'original recedes behind the choices');

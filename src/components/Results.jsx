@@ -27,7 +27,7 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
     return () => timers.clearInterval(timer);
   }, [timeoutVersion, timeoutMs, onActivity]);
   const scanCardRef = useRef(null);
-  const phoneFeedback = useTakeawayEcho(sync.takeawayInteraction, scanCardRef, onActivity);
+  const phoneFeedback = useTakeawayEcho(sync.takeawayInteraction, scanCardRef, onActivity, !isResetting);
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset);
   const visualState = timing.animating ? "is-transferring-out" : timing.away ? "is-away" : timing.restoring ? "is-restoring" : "";
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
     if (sync.phoneConnected || sync.handoff) onActivity?.();
   }, [sync.phoneConnected, sync.handoff, onActivity]);
 
-  const lockup = <div className={`results-lockup ${actionsRef ? "results-lockup--attached" : ""}`}>
+  const lockup = <div className={`results-lockup ${actionsRef ? "results-lockup--attached" : ""} ${isResetting ? "is-resetting" : ""}`}>
           <aside className="share-card" ref={scanCardRef}><StampFrame />
             <span className="share-card__star">✳</span>
             <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={156} level="M" /></div>

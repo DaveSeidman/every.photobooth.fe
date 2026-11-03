@@ -12,7 +12,7 @@ const titles = {
   error: <>Keep the photo.<em>Try again.</em></>,
 };
 export default function BoothTitle({ phase, hasPhoto = true }) {
-  const requested = phase === 'flash' ? 'countdown' : ['connected','resetting'].includes(phase) ? 'results' : phase === 'error' && !hasPhoto ? 'camera' : phase;
+  const requested = phase === 'camera-reveal' ? 'attract' : phase === 'flash' ? 'countdown' : ['connected','resetting'].includes(phase) ? 'results' : phase === 'error' && !hasPhoto ? 'camera' : phase;
   const [shown, setShown] = useLoggedState('BoothTitle.shown', requested);
   const ref = useRef(null);
   useLayoutEffect(() => {

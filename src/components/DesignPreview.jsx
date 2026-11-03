@@ -1,3 +1,4 @@
+import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useMemo, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -17,6 +18,7 @@ const screens = [
   ["review", "04 Review"], ["styles", "05 Choose style"],
   ["processing", "06 Generating"], ["error", "06b Error"],
   ["results", "07 Finished + QR"], ["connected", "08 Phone connected"],
+  ["resetting", "09 Controls fall away"], ["camera-reveal", "10 Camera power-on"],
 ];
 const original = `${import.meta.env.BASE_URL}test-frames/image1.png`;
 
@@ -36,6 +38,11 @@ export default function DesignPreview() {
     if (["attract", "camera", "review", "styles"].includes(id)) { setDeveloped(false); setProcessingStarted(false); imageRef.current?.style.removeProperty("--image-opacity"); }
     window.location.hash = `/preview/${id}`;
   };
+  useEffect(() => {
+    if (screen !== "resetting" && screen !== "camera-reveal") return;
+    const timer = timers.setTimeout(() => go(screen === "resetting" ? "camera-reveal" : "attract"), screen === "resetting" ? 720 : 900);
+    return () => timers.clearTimeout(timer);
+  },[screen]);
   const sync = useMemo(() => ({
     status: "connected", phones: screen === "connected" ? 1 : 0,
     phoneConnected: screen === "connected", clockOffset: 0,
@@ -68,12 +75,13 @@ export default function DesignPreview() {
     </nav>
     <main className={`booth booth--mode-every booth--${screen}`} data-title-phase={screen}><BoothTitle phase={screen} />
       <KioskChrome phase={screen} />
-      <CameraPhoto wobble={screen === "processing"} actionsRef={actionsRef} depth={["attract", "styles"].includes(screen) ? "back" : ["camera", "countdown", "flash"].includes(screen) ? "closeup" : "normal"}
-        developing={screen === "review"} caption={screen === "review" ? "Is everyone in frame?" : ["processing", "results", "connected"].includes(screen) ? style.label : null}
+      <CameraPhoto wobble={screen === "processing"} actionsRef={actionsRef} depth={["attract", "styles", "camera-reveal"].includes(screen) ? "back" : ["camera", "countdown", "flash"].includes(screen) ? "closeup" : "normal"}
+        developing={screen === "review"} caption={screen === "review" ? "Is everyone in frame?" : ["processing", "results", "connected", "resetting"].includes(screen) ? style.label : null}
         actions={screen === "review" ? <ReviewActions onRetake={() => go("camera")} onApprove={() => go("styles")} /> : screen === "attract" ? <TicketButton key="start" onSelect={() => go("camera")}>Start your Thesis</TicketButton> : screen === "camera" ? <TicketButton key="capture" className="shutter-button" onSelect={() => go("countdown")}>Take portrait</TicketButton> : null}>
-        <div className="camera camera--captured" ref={surfaceRef} data-result-ready={developed || ["results", "connected"].includes(screen) || undefined}>
-          <img className="camera__still" ref={imageRef} src={developed || ["results", "connected"].includes(screen) ? style.preview : original} alt="Preview portrait" />
-          {(screen === "processing" || (processingStarted && ["results", "connected"].includes(screen))) && <ProcessingSurface source={original} result={{styled:style.preview}} imageRef={imageRef} onDeveloped={() => setDeveloped(true)} onComplete={() => go("results")} />}
+        <div className={`camera camera--captured ${screen === "camera-reveal" ? "camera--revealing" : ""}`} ref={surfaceRef} data-result-ready={developed || ["results", "connected", "resetting", "camera-reveal"].includes(screen) || undefined}>
+          <div className="camera__frame"><div className="camera__reveal"><img className="preview-camera" src={original} alt="Simulated live camera" /></div></div>
+          <img className="camera__still" ref={imageRef} src={developed || ["results", "connected", "resetting", "camera-reveal"].includes(screen) ? style.preview : original} alt="Preview portrait" />
+          {(screen === "processing" || (processingStarted && ["results", "connected", "resetting", "camera-reveal"].includes(screen))) && <ProcessingSurface source={original} result={{styled:style.preview}} imageRef={imageRef} onDeveloped={() => setDeveloped(true)} onComplete={() => go("results")} />}
           {screen === "countdown" && <strong className="camera__countdown">3</strong>}
         </div>
         {screen === "processing" && <div className="progress" role="progressbar" aria-valuenow={58}><div className="progress__track"><span style={{width:"58%"}} /></div></div>}
@@ -85,7 +93,7 @@ export default function DesignPreview() {
       {screen === "styles" && <StylePicker styles={defaultExperience.everyStyles} onSelect={(item) => { setStyle(item); go("processing"); }} />}
       {screen === "processing" && <section className="processing"><h1>Becoming <em>something else</em></h1></section>}
       {screen === "error" && <section className="flow-error" role="alert"><h1>Keep the photo.<em>Try again.</em></h1><p className="error-message">That took longer than expected.</p><div className="flow-error__actions"><button className="secondary-button" onClick={() => go("attract")}>Restart</button><button className="primary-button" onClick={() => go("styles")}>Choose a style</button></div></section>}
-      {["results", "connected"].includes(screen) && <Results result={result} previewSync={sync} imageRef={imageRef} surfaceRef={surfaceRef} actionsRef={actionsRef} onReset={() => go("attract")} />}
+      {["results", "connected", "resetting"].includes(screen) && <Results result={result} previewSync={sync} imageRef={imageRef} surfaceRef={surfaceRef} actionsRef={actionsRef} isResetting={screen === "resetting"} onReset={() => go("resetting")} />}
     </main>
   </>;
 }

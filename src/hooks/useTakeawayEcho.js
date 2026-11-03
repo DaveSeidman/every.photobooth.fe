@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useLoggedState } from "./useLoggedState.js";
 import { timers } from "../lib/timers.js";
 
-export function useTakeawayEcho(interaction, cardRef, onActivity) {
+export function useTakeawayEcho(interaction, cardRef, onActivity, enabled = true) {
   const [feedback, setFeedback] = useLoggedState("Results.phoneFeedback", "");
   const animation = useRef(null);
   const restoreTimer = useRef(null);
@@ -10,7 +10,15 @@ export function useTakeawayEcho(interaction, cardRef, onActivity) {
   activity.current = onActivity;
   useEffect(() => () => { animation.current?.cancel(); timers.clearTimeout(restoreTimer.current); }, []);
   useEffect(() => {
-    if (!interaction || !cardRef.current) return;
+    if (enabled) return;
+    animation.current?.cancel(); timers.clearTimeout(restoreTimer.current);
+    if(cardRef.current) {
+      cardRef.current.style.transform="";cardRef.current.style.transformOrigin="";
+      delete cardRef.current.dataset.remotePull;
+    }
+  },[enabled,cardRef]);
+  useEffect(() => {
+    if (!enabled || !interaction || !cardRef.current) return;
     const card = cardRef.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const restore = () => {
@@ -50,6 +58,6 @@ export function useTakeawayEcho(interaction, cardRef, onActivity) {
       const messages={"share-start":"Sharing from your phone…","share-complete":"Shared from your phone. Enjoy your portrait!","download-started":"Your phone’s download has started.","share-cancelled":"Share cancelled. You can try again on your phone.","share-error":"Try saving again on your phone."};
       if(messages[action])setFeedback(messages[action]);
     }
-  },[interaction,cardRef]);
+  },[interaction,cardRef,enabled]);
   return feedback;
 }

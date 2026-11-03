@@ -45,6 +45,7 @@ function Booth() {
     try { localStorage.setItem("booth-camera-framing", JSON.stringify(value)); } catch { /* Private browsing may disable storage. */ }
   };
   const resetTimerRef = useRef(null);
+  const resetInProgress = useRef(false);
   const transitionTimerRef = useRef(null);
   const captureStartedRef = useRef(false);
   const exposureStartedAtRef = useRef(0);
@@ -143,6 +144,7 @@ function Booth() {
 
   const reset = useCallback((toAttract = true) => {
     logEvent("flow.reset", { toAttract });
+    resetInProgress.current = false;
     clearTimers();
     setStartLeaving(false);
     setFacePresent(false);
@@ -163,12 +165,26 @@ function Booth() {
     }
   }, []);
 
+  const beginReset = useCallback(() => {
+    if (resetInProgress.current) return;
+    resetInProgress.current = true;
+    clearTimers();
+    logEvent("flow.reset-exit-started");
+    setPhase("resetting");
+    transitionTimerRef.current = timers.setTimeout(() => {
+      logEvent("flow.camera-reveal-started");
+      setPhase("camera-reveal");
+      transitionTimerRef.current = timers.setTimeout(() => reset(true), 900);
+    }, 720);
+  }, [reset]);
+
   const refreshResultTimeout = useCallback(() => {
+    if (resetInProgress.current) return;
     logEvent("flow.reset-timer-refreshed", { delayMs: appConfig.resetDelayMs });
     if (resetTimerRef.current) timers.clearTimeout(resetTimerRef.current);
     setTimeoutVersion((version) => version + 1);
-    resetTimerRef.current = timers.setTimeout(() => reset(true), appConfig.resetDelayMs);
-  }, [reset]);
+    resetTimerRef.current = timers.setTimeout(beginReset, appConfig.resetDelayMs);
+  }, [beginReset]);
 
   useEffect(() => () => {
     clearTimers();
@@ -290,7 +306,7 @@ function Booth() {
   processPhotoRef.current = processPhoto;
 
   const cameraVisible = true;
-  const cameraDepth = phase === "styles" ? "back" : phase === "attract" ? (facePresent ? "normal" : "back")
+  const cameraDepth = ["styles", "camera-reveal"].includes(phase) ? "back" : phase === "attract" ? (facePresent ? "normal" : "back")
     : ["camera", "countdown", "flash"].includes(phase) || (phase === "error" && !captureBlob) ? "closeup" : "normal";
   const styles = experience.everyStyles || defaultExperience.everyStyles;
   const screenLabels = {
@@ -315,7 +331,7 @@ function Booth() {
           <TicketButton key="capture" className="shutter-button" onSelect={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting" || startLeaving} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</TicketButton>
         </> : null
       }>
-        <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} photo={portraitDeveloped && result ? result.styled : originalPhoto} imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} resultReady={portraitDeveloped} countdown={phase === "countdown" ? count : null} onDiagnostics={setCameraDiagnostics} onPresenceChange={setFacePresent}>
+        <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} photo={portraitDeveloped && result ? result.styled : originalPhoto} imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} resultReady={portraitDeveloped} revealing={phase === "camera-reveal"} countdown={phase === "countdown" ? count : null} onDiagnostics={setCameraDiagnostics} onPresenceChange={setFacePresent}>
           {["processing", "results", "resetting"].includes(phase) && <ProcessingSurface source={originalPhoto} result={result} imageRef={portraitImageRef}
             onDeveloped={() => setPortraitDeveloped(true)} onComplete={() => {
               setPhase("results"); refreshResultTimeout();
@@ -376,12 +392,7 @@ function Booth() {
         <Results
           result={result}
           imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} actionsRef={portraitActionsRef}
-          onReset={() => {
-            if (resetTimerRef.current) timers.clearTimeout(resetTimerRef.current);
-            resetTimerRef.current = null;
-            setPhase("resetting");
-            transitionTimerRef.current = timers.setTimeout(() => reset(true), 450);
-          }}
+          onReset={beginReset}
           isResetting={phase === "resetting"}
           onActivity={refreshResultTimeout}
           timeoutVersion={timeoutVersion}

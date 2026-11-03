@@ -5,7 +5,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { captureRegion, defaultFraming } from "../lib/cameraFraming.js";
 import FaceFlowParticles from "./FaceFlowParticles.jsx";
 
-const Camera = forwardRef(function Camera({ visible = true, particlesActive = false, onStatusChange, framing = defaultFraming, onDiagnostics, onPresenceChange, photo, countdown = null, imageRef, surfaceRef, resultReady = false, children }, ref) {
+const Camera = forwardRef(function Camera({ visible = true, particlesActive = false, onStatusChange, framing = defaultFraming, onDiagnostics, onPresenceChange, photo, countdown = null, imageRef, surfaceRef, resultReady = false, revealing = false, children }, ref) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const framingRef = useRef(framing);
@@ -119,14 +119,14 @@ const Camera = forwardRef(function Camera({ visible = true, particlesActive = fa
   }, [resultReady, Boolean(children)]);
 
   return (
-    <div className={`camera ${visible ? "" : "camera--muted"} ${photo ? "camera--captured" : ""}`} data-camera-status={status} data-result-ready={resultReady || undefined} ref={surfaceRef}>
-      <div className="camera__frame">
+    <div className={`camera ${visible ? "" : "camera--muted"} ${photo ? "camera--captured" : ""} ${revealing ? "camera--revealing" : ""}`} data-camera-status={status} data-result-ready={resultReady || undefined} ref={surfaceRef}>
+      <div className="camera__frame"><div className="camera__reveal">
         <video ref={videoRef} autoPlay muted playsInline aria-label="Live camera preview" style={{
           width: `${framing.zoom * 100}%`, height: `${framing.zoom * 100}%`,
           left: `${-(framing.zoom - 1) * framing.x}%`, top: `${-(framing.zoom - 1) * framing.y}%`,
           objectPosition: `${framing.x}% ${framing.y}%`,
         }} />
-      </div>
+      </div></div>
       <img ref={imageRef} className="camera__still" src={photo || undefined} hidden={!photo} alt={resultReady ? "Your finished portrait" : "Your captured portrait"} />
       {children}
       {countdown !== null && <strong key={countdown} className="camera__countdown" role="timer" aria-live="assertive">{countdown || "•"}</strong>}
