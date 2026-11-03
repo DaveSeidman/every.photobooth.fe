@@ -1,3 +1,4 @@
+import StampFrame from "./StampFrame.jsx";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useRef } from "react";
@@ -62,7 +63,7 @@ export default function Takeaway() {
       </header>
       <h1 className="takeaway-page__title">Yours <em>to keep</em></h1>
       <section className="takeaway-page__gallery" aria-label="Your Every portrait">
-        <div className={`takeaway-page__portrait ${timing.animating ? "is-transferring-in" : ""}`} style={{ animationDelay: timing.animationDelay }}>
+        <div className={`takeaway-page__portrait ${timing.animating ? "is-transferring-in" : ""}`} style={{ animationDelay: timing.animationDelay }}><StampFrame />
           {photoId && <img ref={imageRef} key={`${stillUrl}-${retry}`} src={`${stillUrl}${retry ? `?retry=${retry}` : ""}`} alt="Your Every portrait" hidden={!ready || imageStatus !== "loaded"}
             onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />}
           {!photoId ? <div className="takeaway-page__image-status"><p>This portrait link is incomplete.</p><p>Scan the QR code on the booth.</p></div>

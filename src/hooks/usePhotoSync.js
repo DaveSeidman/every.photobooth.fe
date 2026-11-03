@@ -101,9 +101,9 @@ export function useHandoffTiming(handoff, clockOffset = 0, device = "kiosk") {
     };
     update();
     const delay = handoff.startsAt - (Date.now() + clockOffset);
-    const timers = [0, exitMs, phoneDelay, phoneDelay + phoneDuration, returnDelay, returnDelay + returnDuration, handoff.durationMs]
+    const scheduledTimers = [0, exitMs, phoneDelay, phoneDelay + phoneDuration, returnDelay, returnDelay + returnDuration, handoff.durationMs]
       .map((offset) => timers.setTimeout(update, Math.max(0, delay + offset)));
-    return () => timers.forEach(timers.clearTimeout);
+    return () => scheduledTimers.forEach((timer) => timers.clearTimeout(timer));
   }, [handoff, clockOffset, device]);
   return timing;
 }

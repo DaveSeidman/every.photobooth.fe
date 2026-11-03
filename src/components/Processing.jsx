@@ -2,14 +2,6 @@ import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useRef } from "react";
 
-function progressCopy(progress) {
-  if (progress < 28) return "Preparing the portrait";
-  if (progress < 58) return "Holding faces and expressions";
-  if (progress < 84) return "Building the editorial world";
-  if (progress < 100) return "Finishing the details";
-  return "Portrait complete";
-}
-
 const GRID_W = 76;
 const GRID_H = 76;
 const INTRO_MS = 750;
@@ -51,10 +43,10 @@ function loadPixels(src, width, height) {
   });
 }
 
-function PixelStorm({ source, result, active, onComplete, spinner, stormComplete }) {
+function PixelStorm({ source, result, active, onComplete, spinner, stormComplete, imageRef }) {
   const backRef = useRef(null);
   const frontRef = useRef(null);
-  const sourceRef = useRef(null);
+  const sourceRef = imageRef;
   const spinnerRef = useRef(null);
   const pixelsRef = useRef({ source: null, result: null, resultReadyAt: null, sourceReadyAt: null });
   const onCompleteRef = useRef(onComplete);
@@ -179,7 +171,7 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
       const introElapsed = sourceReadyAt === null ? 0 : Math.max(0, now - sourceReadyAt);
       const elapsed = Math.max(0, introElapsed - INTRO_MS);
       const introMix = smooth(clamp01((introElapsed - PHOTO_HOLD_MS) / (INTRO_MS - PHOTO_HOLD_MS)));
-      if (sourceRef.current) sourceRef.current.style.opacity = String(1 - introMix);
+      if (sourceRef.current) sourceRef.current.style.setProperty("--image-opacity", String(1 - introMix));
       if (spinnerRef.current) spinnerRef.current.style.opacity = String(introMix);
       canvases.forEach((canvas) => { if (canvas) canvas.style.opacity = String(smooth(clamp01(introElapsed / INTRO_MS))); });
       const afterReady = resultReadyAt === null || sourceReadyAt === null || introElapsed < INTRO_MS
@@ -264,7 +256,18 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
         const targetR = colorTo[offset]; const targetG = colorTo[offset + 1]; const targetB = colorTo[offset + 2];
         ctx.fillStyle = `rgb(${Math.round((sourceR + (targetR - sourceR) * colorMix) * shade)} ${Math.round((sourceG + (targetG - sourceG) * colorMix) * shade)} ${Math.round((sourceB + (targetB - sourceB) * colorMix) * shade)})`;
         ctx.globalAlpha = 1 - 0.35 * launch * (1 - dock);
-        ctx.fillRect(screenX * cellW - particleW / 2, screenY * cellH - particleH / 2, particleW, particleH);
+        const left = screenX * cellW - particleW / 2;
+        const top = screenY * cellH - particleH / 2;
+        // Keep the intro and docked photo seamless; soften tiles only in flight.
+        const roundness = Math.min(particleW, particleH) * .24 * launch * (1 - dock);
+        if (roundness > .2 && ctx.roundRect) {
+          ctx.beginPath(); ctx.roundRect(left, top, particleW, particleH, roundness); ctx.fill();
+          if (z > ROCK_DEPTH && particleW > 4) {
+            ctx.fillStyle = "#ffffff";
+            ctx.globalAlpha *= .14 * launch * (1 - dock);
+            ctx.fillRect(left + roundness, top + .5, Math.max(0, particleW - roundness * 2), .6);
+          }
+        } else ctx.fillRect(left, top, particleW, particleH);
       }
       ctxs.forEach((ctx) => { if (ctx) ctx.globalAlpha = 1; });
       if (afterReady !== null && (reduceMotion || afterReady >= FINISH_MS)) {
@@ -282,7 +285,6 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
 
   return (
     <>
-      <img className="processing__intro-photo" ref={sourceRef} src={source} alt="Your original portrait" />
       <video className={`processing__spinner ${stormComplete ? "is-leaving" : ""}`} ref={spinnerRef} style={{ opacity: 0 }} src={spinner} autoPlay loop muted playsInline aria-hidden="true" />
       <canvas className="processing__pixels processing__pixels--back" ref={backRef} style={{ opacity: 0 }} aria-hidden="true" />
       <canvas className="processing__pixels processing__pixels--front" ref={frontRef} style={{ opacity: 0 }} aria-hidden="true" />
@@ -290,35 +292,19 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
   );
 }
 
-export default function Processing({ progress, result, source, style, onComplete }) {
-  const [stormComplete, setStormComplete] = useLoggedState("Processing.stormComplete", false);
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+export function ProcessingSurface({ source, result, imageRef, onDeveloped, onComplete }) {
+  const [complete, setComplete] = useLoggedState("ProcessingSurface.complete", false);
+  const completion = useRef(onComplete);
+  completion.current = onComplete;
   const safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
   useEffect(() => {
-    if (!stormComplete) return undefined;
-    const timer = timers.setTimeout(() => onCompleteRef.current?.(), 900);
+    if (!complete) return;
+    const timer = timers.setTimeout(() => completion.current?.(), 900);
     return () => timers.clearTimeout(timer);
-  }, [stormComplete]);
-
-  return (
-    <section className="processing" aria-live="polite">
-      <div className="processing__copy">
-        <div className="processing__art" aria-label="Your portrait pixels orbit the spinning stone and gather into their new form">
-          <PixelStorm source={source} result={result?.styled} active stormComplete={stormComplete}
-            spinner={`${import.meta.env.BASE_URL}thesis/stone.${safari ? "mov" : "webm"}`}
-            onComplete={() => setStormComplete(true)} />
-          {result && <img className={`processing__result ${stormComplete ? "is-visible" : ""}`} src={result.styled} alt="Your finished portrait" />}
-        </div>
-        <p className="eyebrow">Every / {style?.label || "Editorial transformation"}</p>
-        <h1>Becoming <em>something else</em></h1>
-        <div className="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}>
-          <div className="progress__track"><span style={{ width: `${progress}%` }} /></div>
-          <div className="progress__meta"><span>{progressCopy(progress)}</span><strong>{progress}%</strong></div>
-        </div>
-        <p className="stamp-caption">{style?.label || "Every portrait"}</p>
-      </div>
-    </section>
-  );
+  }, [complete]);
+  return <div className={`processing__art processing__art--persistent ${complete ? "is-complete" : ""}`}>
+    <PixelStorm source={source} result={result?.styled} imageRef={imageRef} active stormComplete={complete}
+      spinner={`${import.meta.env.BASE_URL}thesis/stone.${safari ? "mov" : "webm"}`}
+      onComplete={() => { setComplete(true); onDeveloped?.(); }} />
+  </div>;
 }

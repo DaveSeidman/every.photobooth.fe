@@ -1,17 +1,23 @@
+import { captureRegion, defaultFraming } from "../lib/cameraFraming.js";
+import { createFacePresence } from "../lib/facePresence.js";
 import { logEvent } from "../lib/logger.js";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useRef } from "react";
 
 const ANALYSIS_WIDTH = 160;
-const ANALYSIS_HEIGHT = 256;
+const ANALYSIS_HEIGHT = 160;
 const MAX_PARTICLES = 240;
 const COLORS = ["238,247,255", "238,247,255", "130,212,255", "74,174,255"];
 
-export default function FaceFlowParticles({ videoRef, active, ready }) {
+export default function FaceFlowParticles({ videoRef, active, ready, showParticles = true, onPresenceChange, framing = defaultFraming }) {
   const canvasRef = useRef(null);
+  const framingRef = useRef(framing);
+  framingRef.current = framing;
   const [reducedMotion, setReducedMotion] = useLoggedState("FaceFlowParticles.reducedMotion", () => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const enabled = active && ready && !reducedMotion;
+  const enabled = active && ready;
+  const presenceCallback = useRef(onPresenceChange);
+  presenceCallback.current = onPresenceChange;
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -48,6 +54,8 @@ export default function FaceFlowParticles({ videoRef, active, ready }) {
     catch { canvas.dataset.effectState = "unavailable"; return undefined; }
     let stopped = false, workerReady = false, busy = false;
     let faces = [], particles = [], credit = 0;
+    let present = false;
+    const updatePresence = createFacePresence();
     let width = 0, height = 0, raf = 0, lastTime = 0;
     let lastAnalysis = -Infinity, lastVideoTime = -1, lastFaceTime = 0, lastDiagnostics = 0, lastPaint = -Infinity;
     canvas.dataset.effectState = "loading";
@@ -93,12 +101,10 @@ export default function FaceFlowParticles({ videoRef, active, ready }) {
       busy = true;
       try {
         // Match object-fit: cover and the mirrored video exactly, including its crop.
-        const scale = Math.max(ANALYSIS_WIDTH / video.videoWidth, ANALYSIS_HEIGHT / video.videoHeight);
-        const cropWidth = ANALYSIS_WIDTH / scale, cropHeight = ANALYSIS_HEIGHT / scale;
+        const region = captureRegion(video.videoWidth, video.videoHeight, framingRef.current);
         analysisContext.save();
         analysisContext.setTransform(-1, 0, 0, 1, ANALYSIS_WIDTH, 0);
-        analysisContext.drawImage(video, (video.videoWidth - cropWidth) / 2, (video.videoHeight - cropHeight) / 2,
-          cropWidth, cropHeight, 0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+        analysisContext.drawImage(video, region.x, region.y, region.size, region.size, 0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
         analysisContext.restore();
         const bitmap = await createImageBitmap(analysis);
         if (stopped) { bitmap.close(); return; }
@@ -134,9 +140,11 @@ export default function FaceFlowParticles({ videoRef, active, ready }) {
         analyze(video, time);
       }
       if (time - lastFaceTime > 550) faces = [];
+      const nextPresence = updatePresence(faces.length > 0, time);
+      if (nextPresence !== present) { present = nextPresence; presenceCallback.current?.(present); }
       const motion = faces.reduce((sum, face) => sum + Math.min(.4, Math.hypot(face.flowX, face.flowY)), 0);
       credit = Math.min(6, credit + dt * (faces.length * 32 + motion * 75));
-      while (faces.length && credit >= 1 && particles.length < MAX_PARTICLES) {
+      while (showParticles && !reducedMotion && faces.length && credit >= 1 && particles.length < MAX_PARTICLES) {
         emit(faces[Math.floor(Math.random() * faces.length)]); credit--;
       }
       context.clearRect(0, 0, width, height);
@@ -164,9 +172,10 @@ export default function FaceFlowParticles({ videoRef, active, ready }) {
     raf = requestAnimationFrame(render);
     return () => {
       stopped = true; cancelAnimationFrame(raf); observer.disconnect(); worker.terminate();
+      presenceCallback.current?.(false);
       canvas.dataset.faceCount = "0";
     };
-  }, [enabled, videoRef]);
+  }, [enabled, videoRef, showParticles, reducedMotion]);
 
   return <canvas ref={canvasRef} className={`face-flow ${enabled ? "face-flow--active" : ""}`} aria-hidden="true" />;
 }

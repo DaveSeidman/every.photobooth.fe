@@ -1,32 +1,30 @@
-export default function StylePicker({ photo, styles, onSelect, onRetake }) {
-  return (
-    <section className="style-picker" aria-labelledby="style-picker-title">
-      <header className="style-picker__header">
-        <div>
-          <p className="eyebrow">Two imperial portraits</p>
-          <h1 id="style-picker-title">Choose your <em>empire</em></h1>
-        </div>
-        <div className="style-picker__source">
-          <img src={photo} alt="Your captured portrait" />
-          <button type="button" className="text-link-button" onClick={onRetake}>Retake photo</button>
-        </div>
-      </header>
-      <div className="style-picker__grid style-picker__grid--two">
-        {styles.map((style, index) => (
-          <button
-            type="button"
-            className="style-card"
-            key={style.id}
-            onClick={() => onSelect(style)}
-            data-testid={`style-${style.id}`}
-            style={{ "--node-delay": `${80 + index * 45}ms` }}
-          >
-            <img src={style.preview} alt={`${style.label} example`} />
-            <span className="style-card__copy"><strong>{style.label}</strong><span>{style.description}</span></span>
-          </button>
-        ))}
-      </div>
-      <button type="button" className="secondary-button style-picker__retake" onClick={onRetake}>Retake photo</button>
-    </section>
-  );
+import { useLayoutEffect, useRef } from "react";
+import StampFrame from "./StampFrame.jsx";
+
+export function StyleChoices({ styles, onSelect }) {
+  const layout = useRef(null);
+  const deck = useRef(null);
+  useLayoutEffect(() => {
+    const update = () => deck.current?.style.setProperty("--style-scale", String(layout.current.getBoundingClientRect().width / 600));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(layout.current);
+    return () => observer.disconnect();
+  }, []);
+  return <div className="style-choice-layout" ref={layout}><div className="style-choice-deck" ref={deck}>
+    {styles.map((style, index) => <div className={`style-option-layer style-option-layer--${index === 0 ? "left" : "right"}`} key={style.id}>
+      <button type="button" className="style-card" onClick={() => onSelect(style)} data-testid={`style-${style.id}`}>
+        <StampFrame />
+        <img src={style.preview} alt={`${style.label} example`} />
+        <span className="style-card__copy"><strong>{style.label}</strong><span>{style.description}</span></span>
+      </button>
+    </div>)}
+  </div></div>;
+}
+
+export default function StylePicker({ styles, onSelect }) {
+  return <section className="style-picker" aria-labelledby="style-picker-title">
+    <header className="style-picker__header"><h1 id="style-picker-title">Choose your <em>Empire</em></h1></header>
+    <StyleChoices styles={styles} onSelect={onSelect} />
+  </section>;
 }

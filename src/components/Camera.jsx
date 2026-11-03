@@ -5,7 +5,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { captureRegion, defaultFraming } from "../lib/cameraFraming.js";
 import FaceFlowParticles from "./FaceFlowParticles.jsx";
 
-const Camera = forwardRef(function Camera({ visible = true, particlesActive = false, onStatusChange, framing = defaultFraming, onDiagnostics }, ref) {
+const Camera = forwardRef(function Camera({ visible = true, particlesActive = false, onStatusChange, framing = defaultFraming, onDiagnostics, onPresenceChange, photo, countdown = null, imageRef, surfaceRef, resultReady = false, children }, ref) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const framingRef = useRef(framing);
@@ -114,8 +114,12 @@ const Camera = forwardRef(function Camera({ visible = true, particlesActive = fa
     streamRef.current?.getTracks?.().forEach((track) => track.stop());
   }, []);
 
+  useEffect(() => {
+    if (resultReady || !children) imageRef?.current?.style.removeProperty("--image-opacity");
+  }, [resultReady, Boolean(children)]);
+
   return (
-    <div className={`camera ${visible ? "" : "camera--muted"}`} data-camera-status={status}>
+    <div className={`camera ${visible ? "" : "camera--muted"} ${photo ? "camera--captured" : ""}`} data-camera-status={status} data-result-ready={resultReady || undefined} ref={surfaceRef}>
       <div className="camera__frame">
         <video ref={videoRef} autoPlay muted playsInline aria-label="Live camera preview" style={{
           width: `${framing.zoom * 100}%`, height: `${framing.zoom * 100}%`,
@@ -123,8 +127,11 @@ const Camera = forwardRef(function Camera({ visible = true, particlesActive = fa
           objectPosition: `${framing.x}% ${framing.y}%`,
         }} />
       </div>
+      <img ref={imageRef} className="camera__still" src={photo || undefined} hidden={!photo} alt={resultReady ? "Your finished portrait" : "Your captured portrait"} />
+      {children}
+      {countdown !== null && <strong key={countdown} className="camera__countdown" role="timer" aria-live="assertive">{countdown || "•"}</strong>}
       <div className="camera__wash" />
-      <FaceFlowParticles videoRef={videoRef} active={particlesActive && framing.zoom === 1 && framing.x === 50 && framing.y === 50} ready={status === "ready"} />
+      <FaceFlowParticles videoRef={videoRef} active={particlesActive} showParticles={framing.zoom === 1 && framing.x === 50 && framing.y === 50} onPresenceChange={onPresenceChange} framing={framing} ready={status === "ready"} />
     </div>
   );
 });

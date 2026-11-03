@@ -3,7 +3,9 @@
 ## Remaining work
 
 - [ ] Get the rest of emperor prompt 2 (currently supplied only through “deep shadows…”).
-- [ ] Review both emperor results and replace the temporary neutral portrait thumbnails with actual examples.
+- [x] Generate both emperor thumbnails from the original couple photo and replace the temporary thumbnails.
+- [ ] Review the emperor thumbnails and new capture/development animation on the iPad.
+- [ ] On the iPad, test taps, corner pulls, incomplete pulls, and touch cancellation for attached ticket buttons.
 - [ ] Check every screen in portrait at 820 × 1180, then on the actual iPad 11-inch A16 in Safari.
 - [ ] Set up the iPad's secure camera connection to the Mac; verify framing, brightness, charging, and screen lock settings.
 - [ ] Demo the complete capture → parallel generations → photo strip → print → QR download flow.

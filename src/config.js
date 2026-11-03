@@ -30,13 +30,13 @@ export const defaultExperience = {
       id: "emperor-cyan",
       label: "Imperial Cyan",
       description: "Marble emperors, punk engraving, and a vivid cyan temple.",
-      preview: `${import.meta.env.BASE_URL}thesis/img/profile.svg`,
+      preview: `${import.meta.env.BASE_URL}style-previews/emperor-cyan.jpg`,
     },
     {
       id: "emperor-ink",
       label: "Imperial Ink",
       description: "Marble emperors in a gritty, antique engraving treatment.",
-      preview: `${import.meta.env.BASE_URL}thesis/img/profile.svg`,
+      preview: `${import.meta.env.BASE_URL}style-previews/emperor-ink.jpg`,
     },
   ],
 };

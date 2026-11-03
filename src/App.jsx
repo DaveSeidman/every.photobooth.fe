@@ -4,15 +4,17 @@ import { useLoggedState } from "./hooks/useLoggedState.js";
 import { useCallback, useEffect, useRef } from "react";
 import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 import { button, Leva, useControls } from "leva";
-import { flushSync } from "react-dom";
 import { fetchExperience, photoUrl, submitPhoto } from "./api.js";
 import { appConfig, defaultExperience } from "./config.js";
+import BoothTitle from "./components/BoothTitle.jsx";
+import CameraPhoto from "./components/CameraPhoto.jsx";
 import CameraDebug from "./components/CameraDebug.jsx";
 import { defaultFraming } from "./lib/cameraFraming.js";
 import Camera from "./components/Camera.jsx";
-import CaptureReview from "./components/CaptureReview.jsx";
+import TicketButton from "./components/TicketButton.jsx";
+import CaptureReview, { ReviewActions } from "./components/CaptureReview.jsx";
 import KioskChrome from "./components/KioskChrome.jsx";
-import Processing from "./components/Processing.jsx";
+import { ProcessingSurface } from "./components/Processing.jsx";
 import Results from "./components/Results.jsx";
 import StylePicker from "./components/StylePicker.jsx";
 import Takeaway from "./components/Takeaway.jsx";
@@ -27,6 +29,9 @@ function replaceHash(path) {
 
 function Booth() {
   const cameraRef = useRef(null);
+  const portraitImageRef = useRef(null);
+  const portraitSurfaceRef = useRef(null);
+  const portraitActionsRef = useRef(null);
   const [cameraDiagnostics, setCameraDiagnostics] = useLoggedState("App.cameraDiagnostics", null);
   const [framing, setFraming] = useLoggedState("App.framing", () => {
     try {
@@ -42,13 +47,17 @@ function Booth() {
   const resetTimerRef = useRef(null);
   const transitionTimerRef = useRef(null);
   const captureStartedRef = useRef(false);
+  const exposureStartedAtRef = useRef(0);
   const processPhotoRef = useRef(null);
   const [phase, setPhase] = useLoggedState("App.phase", "attract");
+  const [facePresent, setFacePresent] = useLoggedState("App.facePresent", false);
+  const [startLeaving, setStartLeaving] = useLoggedState("App.startLeaving", false);
   const [cameraStatus, setCameraStatus] = useLoggedState("App.cameraStatus", "idle");
   const [count, setCount] = useLoggedState("App.count", appConfig.countdownSeconds);
   const [captureBlob, setCaptureBlob] = useLoggedState("App.captureBlob", null);
   const [originalPhoto, setOriginalPhoto] = useLoggedState("App.originalPhoto", null);
   const [selectedStyle, setSelectedStyle] = useLoggedState("App.selectedStyle", null);
+  const [portraitDeveloped, setPortraitDeveloped] = useLoggedState("App.portraitDeveloped", false);
   const [progress, setProgress] = useLoggedState("App.progress", 0);
   const [result, setResult] = useLoggedState("App.result", null);
   const [error, setError] = useLoggedState("App.error", "");
@@ -97,11 +106,7 @@ function Booth() {
 
   const transitionTo = useCallback((nextPhase) => {
     logEvent("flow.transition-requested", { nextPhase });
-    if (!document.startViewTransition) {
-      setPhase(nextPhase);
-      return;
-    }
-    document.startViewTransition(() => flushSync(() => setPhase(nextPhase)));
+    setPhase(nextPhase);
   }, []);
 
   useEffect(() => {
@@ -139,11 +144,14 @@ function Booth() {
   const reset = useCallback((toAttract = true) => {
     logEvent("flow.reset", { toAttract });
     clearTimers();
+    setStartLeaving(false);
+    setFacePresent(false);
     clearCapture();
     setSelectedStyle(null);
     setResult(null);
     setError("");
     setProgress(0);
+    setPortraitDeveloped(false);
     setCount(appConfig.countdownSeconds);
     captureStartedRef.current = false;
     replaceHash("/");
@@ -169,6 +177,13 @@ function Booth() {
 
   const begin = async () => {
     setError("");
+    if (phase === "attract") {
+      setStartLeaving(true);
+      transitionTimerRef.current = timers.setTimeout(() => {
+        setStartLeaving(false);
+        transitionTimerRef.current = null;
+      }, 800);
+    }
     setPhase("camera");
     try {
       await cameraRef.current.start();
@@ -183,12 +198,21 @@ function Booth() {
     setPhase("countdown");
   }, []);
 
-  const acceptCapture = useCallback((blob) => {
+  const acceptCapture = useCallback(async (blob) => {
+    const photo = URL.createObjectURL(blob);
+    const decoded = new Image();
+    decoded.src = photo;
+    try { await decoded.decode(); }
+    catch (error) { URL.revokeObjectURL(photo); throw error; }
     clearCapture();
     setCaptureBlob(blob);
-    setOriginalPhoto(URL.createObjectURL(blob));
-    transitionTo("review");
-  }, [transitionTo]);
+    setOriginalPhoto(photo);
+    // Swap to the frozen exposure inside the existing photo, then develop it.
+    transitionTimerRef.current = timers.setTimeout(() => {
+      transitionTimerRef.current = null;
+      setPhase("review");
+    }, Math.max(0, 420 - (performance.now() - exposureStartedAtRef.current)));
+  }, []);
 
   useEffect(() => {
     if (phase !== "countdown") return undefined;
@@ -198,15 +222,14 @@ function Booth() {
     }
     if (captureStartedRef.current) return undefined;
     captureStartedRef.current = true;
+    exposureStartedAtRef.current = performance.now();
     setPhase("flash");
-    transitionTimerRef.current = timers.setTimeout(() => {
-      cameraRef.current.capture()
-        .then(acceptCapture)
-        .catch((captureError) => {
-          setError(captureError.message);
-          setPhase("error");
-        });
-    }, 200);
+    cameraRef.current.capture()
+      .then(acceptCapture)
+      .catch((captureError) => {
+        setError(captureError.message);
+        setPhase("error");
+      });
     return undefined;
   }, [phase, count, acceptCapture]);
 
@@ -238,6 +261,7 @@ function Booth() {
   const processPhoto = async (style) => {
     if (!captureBlob) return;
     setSelectedStyle(style);
+    setPortraitDeveloped(false);
     setProgress(5);
     setError("");
     transitionTo("processing");
@@ -265,7 +289,9 @@ function Booth() {
   };
   processPhotoRef.current = processPhoto;
 
-  const cameraVisible = ["attract", "camera", "countdown", "flash", "resetting"].includes(phase);
+  const cameraVisible = true;
+  const cameraDepth = phase === "styles" ? "back" : phase === "attract" ? (facePresent ? "normal" : "back")
+    : ["camera", "countdown", "flash"].includes(phase) || (phase === "error" && !captureBlob) ? "closeup" : "normal";
   const styles = experience.everyStyles || defaultExperience.everyStyles;
   const screenLabels = {
     attract: "01 / ATTRACT", camera: "02 / CAMERA SETUP",
@@ -275,24 +301,36 @@ function Booth() {
   };
 
   return (
-    <main className={`booth booth--${phase} booth--mode-every`} data-testid="booth">
+    <main className={`booth booth--${phase} booth--mode-every`} data-testid="booth" data-title-phase={phase}>
+      <BoothTitle phase={phase} hasPhoto={Boolean(captureBlob)} />
       {!['results', 'resetting'].includes(phase) && <DeveloperScreenLabel name={screenLabels[phase]} />}
       <aside hidden={!showPromptControls} className="developer-controls" aria-label="Developer controls">
         <Leva hidden={!showPromptControls} fill collapsed={false} titleBar={{ title: "Developer controls", drag: false }} />
         <CameraDebug cameraRef={cameraRef} diagnostics={cameraDiagnostics} framing={framing} onFramingChange={updateFraming} disabled={cameraStatus === "requesting" || !["attract", "camera"].includes(phase)} />
       </aside>
-      <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} onDiagnostics={setCameraDiagnostics} />
-      {phase !== "results" && <KioskChrome phase={phase} cameraStatus={cameraStatus} />}
+      <CameraPhoto wobble={phase === "processing"} actionsRef={portraitActionsRef} depth={cameraDepth} visible={cameraVisible} developing={phase === "review"} caption={phase === "review" ? "Is everyone in frame?" : ["processing", "results", "resetting"].includes(phase) ? selectedStyle?.label : null} actions={
+        phase === "review" ? <ReviewActions onRetake={retake} onApprove={approvePhoto} /> :
+        phase === "attract" ? <TicketButton key="start" className="primary-button" onSelect={begin} data-testid="begin-button">Start your Thesis</TicketButton> :
+        phase === "camera" || (phase === "error" && !captureBlob) ? <>
+          <TicketButton key="capture" className="shutter-button" onSelect={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting" || startLeaving} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</TicketButton>
+        </> : null
+      }>
+        <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} photo={portraitDeveloped && result ? result.styled : originalPhoto} imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} resultReady={portraitDeveloped} countdown={phase === "countdown" ? count : null} onDiagnostics={setCameraDiagnostics} onPresenceChange={setFacePresent}>
+          {["processing", "results", "resetting"].includes(phase) && <ProcessingSurface source={originalPhoto} result={result} imageRef={portraitImageRef}
+            onDeveloped={() => setPortraitDeveloped(true)} onComplete={() => {
+              setPhase("results"); refreshResultTimeout();
+            }} />}
+        </Camera>
+        {phase === "processing" && <div className="progress" role="progressbar" aria-label="Generating portrait" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}><div className="progress__track"><span style={{width:`${progress}%`}} /></div></div>}
+      </CameraPhoto>
+      <KioskChrome phase={phase} cameraStatus={cameraStatus} />
 
-      {phase === "attract" && (
-        <section className="attract-panel">
+      {(phase === "attract" || startLeaving) && (
+        <section className={`attract-panel ${startLeaving ? "is-leaving" : ""}`} aria-hidden={startLeaving || undefined}>
           <div className="attract-panel__copy">
             <p className="eyebrow">{appConfig.kicker}</p>
             <h1>Welcome to <em className="thesis-italic">the future</em></h1>
             <p className="attract-panel__intro">The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI.</p>
-            <button type="button" className="primary-button" onClick={begin} data-testid="begin-button">
-              Start your Thesis
-            </button>
           </div>
         </section>
       )}
@@ -301,52 +339,32 @@ function Booth() {
         <section className="capture-panel">
           <div>
             <p className="eyebrow">Every portrait / 001</p>
-            <h1>Frame <em>the human</em></h1>
+            <h1>Frame <em>the Humans</em></h1>
             {error && <p className="error-message" role="alert">{error}</p>}
-          </div>
-          <div className="capture-panel__actions">
-            <button type="button" className="shutter-button" onClick={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting"} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</button>
-            <span className="shutter-button__label" aria-hidden="true">Take portrait</span>
           </div>
         </section>
       )}
 
       {phase === "countdown" && (
         <section className="countdown" aria-live="assertive">
-          <div className="countdown__wash" aria-hidden="true" />
           <h1>Hold <em>the pose</em></h1>
-          <strong key={count}>{count || "•"}</strong>
         </section>
       )}
 
-      {phase === "flash" && <div className="camera-flash" aria-hidden="true" />}
-
       {phase === "review" && originalPhoto && (
-        <CaptureReview photo={originalPhoto} onRetake={retake} onApprove={approvePhoto} />
+        <CaptureReview photo={originalPhoto} showPhoto={false} showActions={false} onRetake={retake} onApprove={approvePhoto} />
       )}
 
       {phase === "styles" && (
-        <StylePicker photo={originalPhoto} styles={styles} onSelect={processPhoto} onRetake={retake} />
+        <StylePicker styles={styles} onSelect={processPhoto} />
       )}
 
-      {phase === "processing" && (
-        <Processing
-          progress={progress}
-          result={result}
-          source={originalPhoto}
-          style={selectedStyle}
-          onComplete={() => {
-            if (!result) return;
-            setPhase("results");
-            refreshResultTimeout();
-          }}
-        />
-      )}
+      {phase === "processing" && <section className="processing" aria-live="polite"><h1>Becoming <em>something else</em></h1></section>}
 
       {phase === "error" && captureBlob && (
         <section className="flow-error" role="alert">
           <h1>Keep the photo.<em>Try again.</em></h1>
-          {originalPhoto && <div className="flow-error__portrait"><img src={originalPhoto} alt="Your captured portrait" /><p>{error}</p></div>}
+          <p className="error-message">{error}</p>
           <div className="flow-error__actions">
             <button type="button" className="secondary-button" onClick={() => reset(true)}>Restart</button>
             <button type="button" className="primary-button" onClick={() => setPhase("styles")}>Choose a style</button>
@@ -357,6 +375,7 @@ function Booth() {
       {["results", "resetting"].includes(phase) && result && (
         <Results
           result={result}
+          imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} actionsRef={portraitActionsRef}
           onReset={() => {
             if (resetTimerRef.current) timers.clearTimeout(resetTimerRef.current);
             resetTimerRef.current = null;
@@ -382,7 +401,7 @@ function HandoffPreview() {
   };
 
   return (
-    <main className="booth booth--results booth--mode-every">
+    <main className="booth booth--results booth--mode-every" data-title-phase="results"><BoothTitle phase="results" />
       <Results result={result} onReset={() => { window.location.hash = "/"; }} />
     </main>
   );

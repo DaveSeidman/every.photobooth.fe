@@ -87,3 +87,24 @@ and printing active. Timeout uses the real adaptive fallback deadline. The
 internet simulation tests AI unavailability, not loss of the iPad-to-Mac LAN or
 cold-loading an uncached website without internet. Normal automatic printing
 still applies to simulated captures.
+
+The live Polaroid has three centered depths: **back** on an empty attract screen,
+**normal** once a face is detected, and **closeup** during camera setup/countdown.
+Presence needs 200 ms of continuous detection; brief tracking gaps are ignored
+before the photo recedes. The existing local face detector uses the same square
+crop as capture. Size changes ease with overshoot, with a short 3D tilt on the
+whole photo; reduced-motion settings disable these movements. Pixel-storm tiles
+round and gain a small highlight only while in flight, preserving the original
+photo intro and completed portrait.
+
+Capture keeps the same live Polaroid container through countdown, exposure, and review. The countdown is centered in the preview image. After freezing the camera frame, an exposure filter blooms to white and develops back to color over 4.2 seconds, with a light iridescent sheen while the photo retreats to normal depth. No view-transition snapshot or duplicate review photo is used. Reduced-motion preferences skip the development effects. Paper edges use the original complete stamp artwork, so the cutouts stay attached to the frame as it scales.
+
+Start, capture, and review controls are attached ticket buttons. Tap or activate with the keyboard normally, or pull downward about 90 CSS pixels and release to tear off and select. Native touchstart/touchmove/touchend/touchcancel handlers track the pull; cancellation or an incomplete tear springs back without selecting. Pulling from either side pivots the ticket around the opposite attachment corner. Mouse/pen dragging is supported as well.
+
+The live Polaroid and its tickets share fixed design geometry: a 600 × 648 frame, 600 × 88 full-width ticket, or two 300 × 88 tickets. Their artwork is generated at those exact dimensions with matching circular perforations. Only the complete group is scaled for depth and viewport fit, so buttons and cutouts cannot stretch independently. Run `node scripts/generate-ticket-art.mjs` to regenerate those SVGs.
+
+The Polaroid container and its `.camera__still` image now remain mounted through the entire live flow. Processing paints its particles around that image and reveals the generated `src` in place; results add QR controls and the source thumbnail without mounting another frame. The normal width/center stay fixed across review, style selection, processing, and results. Style choices float above the dimmed original as two un-stretched 600 × 300 cards with coral titles and no retake action. They enter from opposite sides with a small 3D tilt, while the original returns to back depth. The phone handoff animates that same image element.
+
+Back depth dims the photo and paper to half brightness on both the empty attract screen and style selection. The foreground choice cards remain fully lit. Document-wide view-transition snapshots are avoided so the persistent Polaroid keeps moving as the same object under the cards.
+
+Phase titles now use one persistent heading, blurring/fading out for 110 ms and resolving the next title over 170 ms. The Polaroid center is raised slightly across every phase; results portal the 600 × 200 QR card and attached 600 × 88 action row into the same scaled object. The 156px QR has equal 22px top, bottom, and left paper margins in the shared design space. Countdown digits and the capture button enter from zero opacity.
