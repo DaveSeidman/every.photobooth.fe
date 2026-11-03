@@ -1,3 +1,4 @@
+import { installFirstTapFullscreen } from "./lib/firstTapFullscreen.js";
 import { installLogging } from "./lib/logger.js";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -7,6 +8,7 @@ import "./thesis.scss";
 import "./responsive.scss";
 
 installLogging();
+installFirstTapFullscreen();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
