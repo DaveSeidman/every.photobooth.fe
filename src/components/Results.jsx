@@ -60,7 +60,7 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
         <div className="results__actions ticket-actions">
           <TicketButton className="secondary-button" onSelect={onReset}>Start again</TicketButton>
           {(onActivity || previewSync) && (
-            <div className="results__reset-timer">
+            <TicketButton className="primary-button results__reset-timer" onSelect={onReset} aria-label={`Reset booth now (${secondsLeft} seconds remaining)`}>
               <span>Booth resets in {secondsLeft}<span className="seconds-unit">s</span></span>
               <div
                 key={timeoutVersion}
@@ -69,7 +69,7 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
                 role="timer"
                 aria-label="Time remaining before this screen resets"
               />
-            </div>
+            </TicketButton>
           )}
         </div>
 

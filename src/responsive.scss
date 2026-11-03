@@ -557,3 +557,10 @@ button, select, input { touch-action: manipulation; }
 }
 
 .booth--mode-every .style-option-layer--right .style-card strong { color: #7654a4; }
+
+.booth--mode-every .results-lockup--attached .results__reset-timer.ticket-button {
+  --ticket-art: url('/thesis/shapes/ticket-300-ink.svg');
+  font-family: var(--sans); text-align: left;
+  .ticket-button__label { display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; }
+  .timeout-line { width: 100%; }
+}

@@ -21,6 +21,7 @@ test('each booth phase renders one shared Polaroid and still-image slot', async 
       if(screen==='results') {
         const resultLayer=markup.slice(markup.indexOf('<section class="results'));
         assert.ok(!resultLayer.includes('class="thesis-chrome"'),'background must not enter the foreground results layer');
+        assert.match(markup, /<button[^>]*class="[^"]*results__reset-timer[^"]*ticket-button/, 'reset countdown is a selectable tear-away ticket');
       }
       if(screen==='styles') {
         assert.ok(!markup.includes('Retake'),'style selection has no retake control');
