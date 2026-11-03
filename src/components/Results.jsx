@@ -3,7 +3,8 @@ import StampFrame from "./StampFrame.jsx";
 import { createPortal } from "react-dom";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
-import { useEffect } from "react";
+import { useTakeawayEcho } from "../hooks/useTakeawayEcho.js";
+import { useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { photoUrl, takeawayUrl } from "../api.js";
 import { useHandoffTiming, usePhotoSync } from "../hooks/usePhotoSync.js";
@@ -25,6 +26,8 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
     const timer = timers.setInterval(update, 250);
     return () => timers.clearInterval(timer);
   }, [timeoutVersion, timeoutMs, onActivity]);
+  const scanCardRef = useRef(null);
+  const phoneFeedback = useTakeawayEcho(sync.takeawayInteraction, scanCardRef, onActivity);
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset);
   const visualState = timing.animating ? "is-transferring-out" : timing.away ? "is-away" : timing.restoring ? "is-restoring" : "";
   useEffect(() => {
@@ -47,13 +50,13 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
   }, [sync.phoneConnected, sync.handoff, onActivity]);
 
   const lockup = <div className={`results-lockup ${actionsRef ? "results-lockup--attached" : ""}`}>
-          <aside className="share-card"><StampFrame />
+          <aside className="share-card" ref={scanCardRef}><StampFrame />
             <span className="share-card__star">✳</span>
             <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={156} level="M" /></div>
             <div>
               <p className="eyebrow">Connect your phone</p>
               <h2>Scan to take<br />it home</h2>
-              <p className="share-card__instruction">Scan with your phone. Your portrait arrives on its own.</p>
+              <p className="share-card__instruction">{phoneFeedback || "Scan with your phone. Your portrait arrives on its own."}</p>
               {sync.status !== "connected" && <p className="share-card__connection" role="status">Connecting booth…</p>}
             </div>
           </aside>

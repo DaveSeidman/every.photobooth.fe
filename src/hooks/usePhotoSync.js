@@ -1,7 +1,7 @@
 import { logEvent } from "../lib/logger.js";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { appConfig } from "../config.js";
 
 function websocketUrl() {
@@ -13,10 +13,11 @@ function websocketUrl() {
   return url.toString();
 }
 
-const initialState = { status: "connecting", phones: 0, kiosks: 0, handoff: null, clockOffset: 0 };
+const initialState = { status: "connecting", phones: 0, kiosks: 0, handoff: null, takeawayInteraction: null, clockOffset: 0 };
 
 export function usePhotoSync(photoId, role) {
   const socketRef = useRef(null);
+  const lastPull = useRef(0);
   const [state, setState] = useLoggedState("usePhotoSync.state", initialState);
   useEffect(() => {
     setState(initialState);
@@ -56,6 +57,7 @@ export function usePhotoSync(photoId, role) {
             handoff: message.handoff, clockOffset: message.serverTime - Date.now(),
           };
           if (message.type === "presence") return { ...current, phones: message.phones, kiosks: message.kiosks };
+          if (message.type === "takeaway:interaction") return { ...current, takeawayInteraction: message };
           if (message.type === "handoff:transfer") return { ...current, handoff: message.handoff };
           return current;
         });
@@ -71,7 +73,14 @@ export function usePhotoSync(photoId, role) {
     connect();
     return () => { logEvent("socket.cleanup", { photoId, role }); stopped = true; timers.clearTimeout(reconnect); socketRef.current?.close(); };
   }, [photoId, role]);
-  return { ...state, phoneConnected: state.status === "connected" && state.phones > 0 };
+  const sendTakeawayInteraction = useCallback((interaction) => {
+    if (role !== "phone" || socketRef.current?.readyState !== WebSocket.OPEN) return;
+    if (interaction.action === "pull" && performance.now() - lastPull.current < 60) return;
+    if (interaction.action === "pull") lastPull.current = performance.now();
+    logEvent("socket.send", {type:"takeaway:interaction",...interaction});
+    socketRef.current.send(JSON.stringify({type:"takeaway:interaction",...interaction}));
+  }, [role]);
+  return { ...state, sendTakeawayInteraction, phoneConnected: state.status === "connected" && state.phones > 0 };
 }
 
 // A new recipient gets a sequence: tablet exit, phone arrival, tablet restoration.

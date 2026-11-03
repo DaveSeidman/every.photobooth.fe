@@ -1,11 +1,13 @@
 import { logEvent } from "./logger.js";
 
 export function installFirstTapFullscreen({ doc = document, pageLocation = window.location, log = logEvent } = {}) {
-  if (pageLocation.origin !== "https://photobooth.lightboxlive.io") return () => {};
+  if (pageLocation.origin !== "https://photobooth.lightboxlive.io" || pageLocation.hash?.startsWith("#/takeaway/")) return () => {};
   const cleanup = () => doc.removeEventListener("click", firstTap, true);
   const firstTap = (event) => {
     if (!event.isTrusted) return;
     cleanup();
+    // Keep the phone gesture available for its native share sheet.
+    if (pageLocation.hash?.startsWith("#/takeaway/")) return;
     if (doc.fullscreenElement || doc.webkitFullscreenElement) return;
     const root = doc.documentElement;
     const request = root.requestFullscreen || root.webkitRequestFullscreen;

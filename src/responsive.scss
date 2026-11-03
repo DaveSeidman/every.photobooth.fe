@@ -564,3 +564,43 @@ button, select, input { touch-action: manipulation; }
   .ticket-button__label { display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; }
   .timeout-line { width: 100%; }
 }
+
+// Deep black shade over the complete photo and paper, preserving color beneath it.
+.booth--mode-every {
+  .camera-photo__object::after {
+    content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+    background: #000; mix-blend-mode: multiply; opacity: 0; transition: opacity 800ms ease;
+    -webkit-mask: url('/thesis/shapes/photo-600.svg') center / 100% 100% no-repeat;
+    mask: url('/thesis/shapes/photo-600.svg') center / 100% 100% no-repeat;
+  }
+  .camera-photo[data-depth="back"] {
+    .camera, .camera-photo__object > .stamp-frame { filter: none; }
+    .camera-photo__object::after { opacity: .74; }
+  }
+  .share-card[data-remote-pull] { z-index: 10; filter: drop-shadow(0 16px 18px #0005); }
+}
+.takeaway-page {
+  .takeaway-page__gallery { gap: 0; }
+  .takeaway-page__actions { width: 100%; margin-top: -1px; }
+  .takeaway-page__actions .takeaway-save-ticket {
+    --ticket-art: url('/thesis/shapes/ticket-390-cyan.svg');
+    position: relative; isolation: isolate; width: 100%; height: auto; aspect-ratio: 390 / 72;
+    min-height: 52px; border: 0; padding: 8px; margin: 0;
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    transition: none; transform-origin: top center; overflow: visible;
+    &, &:hover, &:active { background: var(--ticket-art) center / 100% 100% no-repeat transparent; color: var(--ink); transform: none; }
+    .ticket-button__label { position: relative; z-index: 1; pointer-events: none; }
+    .ticket-button__glow {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 160ms ease;
+      background: radial-gradient(ellipse 100px 75px at var(--grab-x, 50%) var(--grab-y, 50%), #ffffffa0, #e2f9ff30 45%, transparent);
+      -webkit-mask: var(--ticket-art) center / 100% 100% no-repeat;
+      mask: var(--ticket-art) center / 100% 100% no-repeat;
+    }
+    &[data-illuminated] .ticket-button__glow { opacity: 1; }
+    &[data-pulling] { filter: drop-shadow(0 12px 12px #0005); opacity: 1; }
+    &:active:not(:disabled) { transform: none; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booth--mode-every .camera-photo__object::after { transition: none; }
+}

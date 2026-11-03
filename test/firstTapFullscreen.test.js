@@ -43,3 +43,9 @@ test('rejected fullscreen requests are logged without an unhandled rejection',as
   await new Promise(resolve=>setImmediate(resolve));
   assert.ok(fixture.logs.some(([event])=>event==='fullscreen.request-failed'));
 });
+
+test('phone takeaway leaves its first tap available for the native share sheet',()=>{
+  const listeners=[];
+  installFirstTapFullscreen({doc:{addEventListener(...args){listeners.push(args);}},pageLocation:{origin:'https://photobooth.lightboxlive.io',hash:'#/takeaway/portrait-123'}});
+  assert.equal(listeners.length,0);
+});

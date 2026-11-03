@@ -3,17 +3,25 @@ import { logEvent } from "../lib/logger.js";
 import { ticketPull, ticketLightPoint } from "../lib/ticketPull.js";
 
 // Native touch events permit a real pull while preserving native tap/keyboard clicks.
-export default function TicketButton({ onSelect, className = "primary-button", children, disabled = false, ...props }) {
+export default function TicketButton({ onSelect, className = "primary-button", children, disabled = false, onActivate, onInteraction, ...props }) {
   const buttonRef = useRef(null);
-  const latest = useRef({ onSelect, disabled });
-  latest.current = { onSelect, disabled };
+  const latest = useRef({ onSelect, disabled, onActivate, onInteraction });
+  latest.current = { onSelect, disabled, onActivate, onInteraction };
   const blocked = useRef(false);
   const suppressClickUntil = useRef(0);
   const animateSelection = useRef(null);
   const lastGrabX = useRef(.8);
   useEffect(() => {
     const button = buttonRef.current;
-    let drag, animation, disposed = false;
+    let drag, animation, disposed = false, gestureId;
+    const emit = (action, pull = {}, method) => {
+      gestureId ||= `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const width = button.offsetWidth || 300;
+      latest.current.onInteraction?.({ action, gestureId, method, progress: pull.progress || 0,
+        x: (pull.x || 0) / width, y: (pull.y || 0) / width, angle: pull.angle || 0,
+        origin: pull.origin ?? (lastGrabX.current >= .5 ? 0 : 100),
+        grabX: lastGrabX.current, grabY: drag ? drag.startY / (button.offsetHeight || 88) : .5 });
+    };
     const reset = () => {
       button.style.transform = "";
       button.style.transformOrigin = "";
@@ -24,6 +32,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
     const start = (x, y, id, kind) => {
       if (blocked.current || latest.current.disabled || drag) return;
       animation?.cancel(); reset();
+      gestureId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const rect = button.getBoundingClientRect();
       drag = { x, y, id, kind, moved: false, dx: 0, dy: 0, width: button.offsetWidth || rect.width, screenScale: rect.width / (button.offsetWidth || rect.width), grabX: Math.max(0, Math.min(1, (x - rect.left) / rect.width)), loggedAt: 0 };
       drag.startX = drag.grabX * drag.width;
@@ -32,6 +41,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       button.style.setProperty("--grab-y", `${drag.startY}px`);
       button.dataset.illuminated = "true";
       lastGrabX.current = drag.grabX;
+      emit("grab");
       logEvent("ticket.grab", { label: button.textContent, kind, grabX: drag.grabX });
     };
     const move = (x, y) => {
@@ -47,6 +57,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       button.style.transformOrigin = `${pull.origin}% 0%`;
       button.style.transform = `translate3d(${pull.x}px, ${pull.y}px, 0) rotate(${pull.angle}deg)`;
       button.style.setProperty("--tear-progress", String(pull.progress));
+      emit("pull", pull);
       if (performance.now() - drag.loggedAt > 100) {
         drag.loggedAt = performance.now();
         logEvent("ticket.pull", { label: button.textContent, progress: pull.progress });
@@ -63,6 +74,10 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       button.style.transformOrigin = `${origin}% 0%`;
       button.dataset.pulling = "true";
       button.dataset.illuminated = "true";
+      emit("detach", { ...pull, progress: 1 }, method);
+      // A native share sheet must be invoked while this trusted gesture is live.
+      try { latest.current.onActivate?.(); }
+      catch(error) { logEvent("ticket.activation-failed", {error}, "error"); }
       logEvent("ticket.detached", { label: button.textContent, method });
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       animation = button.animate([
@@ -77,7 +92,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
     const finish = (cancelled = false) => {
       if (!drag) return false;
       const current = drag; drag = null;
-      if (!current.moved) { if (cancelled) delete button.dataset.illuminated; logEvent(cancelled ? "ticket.cancel" : "ticket.tap-ready", { label: button.textContent }); return false; }
+      if (!current.moved) { if (cancelled) { delete button.dataset.illuminated; emit("cancel"); } logEvent(cancelled ? "ticket.cancel" : "ticket.tap-ready", { label: button.textContent }); return false; }
       suppressClickUntil.current = performance.now() + 1000;
       const pull = ticketPull(current);
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -85,6 +100,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
         detach("pull", pull);
       } else {
         delete button.dataset.illuminated;
+        emit("cancel", pull);
         logEvent(cancelled ? "ticket.cancel" : "ticket.reattach", { label: button.textContent, progress: pull.progress });
         animation = button.animate([{ transform: button.style.transform }, { transform: "translate3d(0,0,0) rotate(0deg)" }], { duration: reduced ? 1 : 380, easing: "cubic-bezier(.16,1.2,.3,1)" });
         animation.finished.then(() => { if (!disposed) reset(); }).catch(() => {});

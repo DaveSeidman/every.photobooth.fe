@@ -10,6 +10,7 @@ function stamp(width, height, fill, edges) {
 for (const [name, width, height, fill, edges] of [
   ['qr-600',600,200,'#fdfaf7',['top','right','bottom','left']],
   ['photo-600',600,648,'#fdfaf7',['top','right','bottom','left']],
+  ['ticket-390-cyan',390,72,'#9ce5f5',['top']],
   ['ticket-600-ink',600,88,'#121212',['top']],
   ['ticket-300-ink',300,88,'#121212',['top','left']],
   ['ticket-300-cream',300,88,'#fdfaf7',['top','right']],

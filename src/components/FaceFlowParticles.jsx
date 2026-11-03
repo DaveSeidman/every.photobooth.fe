@@ -122,7 +122,7 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
         y: face.y + face.height * (.5 + ny * .47),
         vx: nx * speed + face.flowX * .65,
         vy: ny * speed * .6 - .022 + face.flowY * .65,
-        age: 0, life, radius: .00065 + Math.random() * .00065,
+        age: 0, life, radius: .00195 + Math.random() * .00195,
         seed: Math.random() * 20, color: COLORS[Math.floor(Math.random() * COLORS.length)],
       });
     };
@@ -157,7 +157,7 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
         particle.x += particle.vx * dt; particle.y += particle.vy * dt;
         const alpha = Math.max(0, Math.sin(Math.PI * particle.age / particle.life)) * .7;
         context.strokeStyle = `rgba(${particle.color},${alpha * .45})`;
-        context.lineWidth = height * .00042;
+        context.lineWidth = height * .00126;
         context.beginPath();
         context.moveTo((oldX - particle.vx * .035) * width, (oldY - particle.vy * .035) * height);
         context.lineTo(particle.x * width, particle.y * height);

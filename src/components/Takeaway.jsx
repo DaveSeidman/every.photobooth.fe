@@ -1,3 +1,4 @@
+import TicketButton from "./TicketButton.jsx";
 import StampFrame from "./StampFrame.jsx";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
@@ -18,7 +19,13 @@ export default function Takeaway() {
   const [imageStatus, setImageStatus] = useLoggedState("Takeaway.imageStatus", "loading");
   const [retry, setRetry] = useLoggedState("Takeaway.retry", 0);
   const imageRef = useRef(null);
-  const previewStyle = defaultExperience.everyStyles.find((style) => style.id === searchParams.get("style")) || defaultExperience.everyStyles[2];
+  const fileRef = useRef(null);
+  const gestureRef = useRef(null);
+  const [fileReady, setFileReady] = useLoggedState("Takeaway.fileReady", false);
+  const [prepareRetry, setPrepareRetry] = useLoggedState("Takeaway.prepareRetry", 0);
+  const [tearDone, setTearDone] = useLoggedState("Takeaway.tearDone", false);
+  const [attempt, setAttempt] = useLoggedState("Takeaway.attempt", 0);
+  const previewStyle = defaultExperience.everyStyles.find((style) => style.id === searchParams.get("style")) || defaultExperience.everyStyles[0];
   const stillUrl = fallback ? previewStyle.preview : (photoId ? photoUrl(photoId) : null);
   const sync = usePhotoSync(fallback ? null : photoId, "phone");
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset, "phone");
@@ -32,26 +39,49 @@ export default function Takeaway() {
   }, [fallback, timing.started, sync.status, sync.kiosks]);
   const ready = revealed || fallback || timing.started;
 
-  const share = async () => {
-    if (sharing || !ready || imageStatus !== "loaded") return;
-    setSharing(true); setMessage("");
-    try {
-      const response = await fetch(stillUrl);
-      if (!response.ok) throw new Error("Your image could not be downloaded. Please try again.");
+  useEffect(() => {
+    let live = true;
+    const controller = new AbortController();
+    fileRef.current = null; setFileReady(false);
+    if (!ready || imageStatus !== "loaded") return;
+    // Prepare before the gesture: native sharing must start synchronously.
+    fetch(stillUrl, {signal:controller.signal}).then(async (response) => {
+      if (!response.ok) throw new Error("Your image could not be prepared. Please try again.");
       const blob = await response.blob();
-      const file = new File([blob], `every-portrait-${photoId}.jpg`, { type: blob.type });
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ files: [file], title: appConfig.title, text: "My Every portrait" });
+      if (!live) return;
+      fileRef.current = new File([blob], `every-portrait-${photoId}.jpg`, {type:blob.type});
+      setFileReady(true); setMessage("");
+    }).catch((error) => { if(live && error.name !== "AbortError") setMessage(error.message); });
+    return () => { live=false; controller.abort(); };
+  }, [stillUrl, ready, imageStatus, prepareRetry]);
+  useEffect(() => {
+    if (tearDone && !sharing) { setTearDone(false); setAttempt(value=>value+1); }
+  }, [tearDone,sharing]);
+  const interaction = (event) => {
+    gestureRef.current = event;
+    sync.sendTakeawayInteraction(event);
+  };
+  const notify = (action) => sync.sendTakeawayInteraction({...gestureRef.current, action});
+  const share = () => {
+    const file = fileRef.current;
+    if (sharing || !ready || !file) return;
+    setSharing(true); setMessage(""); notify("share-start");
+    let task;
+    try {
+      if (navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))) {
+        task = navigator.share({files:[file], title:appConfig.title, text:"My Every portrait"});
+        Promise.resolve(task).then(()=>{notify("share-complete");setMessage("Share complete. You can share again anytime.");})
+          .catch(error=>{notify(error.name === "AbortError" ? "share-cancelled" : "share-error");if(error.name!=="AbortError")setMessage(error.message);})
+          .finally(()=>setSharing(false));
       } else {
-        const objectUrl = URL.createObjectURL(blob);
+        const objectUrl = URL.createObjectURL(file);
         const anchor = document.createElement("a");
-        anchor.href = objectUrl; anchor.download = file.name;
+        anchor.href=objectUrl; anchor.download=file.name;
         document.body.append(anchor); anchor.click(); anchor.remove();
-        timers.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        timers.setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+        notify("download-started");setMessage("Download started.");setSharing(false);
       }
-    } catch (error) {
-      if (error.name !== "AbortError") setMessage(error.message);
-    } finally { setSharing(false); }
+    } catch(error) { notify("share-error");setMessage(error.message);setSharing(false); }
   };
 
   return (
@@ -72,8 +102,10 @@ export default function Takeaway() {
           <p className="takeaway-page__caption">{fallback ? previewStyle.label : searchParams.get("label") || "Every portrait"}</p>
         </div>
         <div className="takeaway-page__actions">
-          <button type="button" className="primary-button" disabled={sharing || !ready || timing.animating || imageStatus !== "loaded"} onClick={share}>{sharing ? "Preparing…" : "Save or share portrait"}</button>
-          {message && <p className="takeaway-page__error" role="status">{message} Tap save to try again.</p>}
+          <TicketButton key={attempt} className="primary-button takeaway-save-ticket" disabled={sharing || !ready || timing.animating || !fileReady}
+            onInteraction={interaction} onActivate={share} onSelect={()=>setTearDone(true)}>{fileReady ? "Save or Share Portrait" : "Preparing…"}</TicketButton>
+          {message && <p className="takeaway-page__error" role="status">{message}</p>}
+          {message && !fileReady && <button className="text-link-button" onClick={()=>setPrepareRetry(value=>value+1)}>Try Again</button>}
           {!ready && sync.status === "reconnecting" && <button type="button" className="text-link-button" onClick={() => setRevealed(true)}>View my portrait</button>}
         </div>
       </section>
