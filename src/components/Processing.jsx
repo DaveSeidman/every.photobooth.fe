@@ -12,6 +12,8 @@ function progressCopy(progress) {
 
 const GRID_W = 76;
 const GRID_H = 76;
+const INTRO_MS = 750;
+const PHOTO_HOLD_MS = 500;
 const DRIFT_MS = 2000;
 const COLOR_MS = 2000;
 const DOCK_STAGGER_MS = 700;
@@ -46,10 +48,12 @@ function loadPixels(src, width, height) {
   });
 }
 
-function PixelStorm({ source, result, active, onComplete }) {
+function PixelStorm({ source, result, active, onComplete, spinner, stormComplete }) {
   const backRef = useRef(null);
   const frontRef = useRef(null);
-  const pixelsRef = useRef({ source: null, result: null, resultReadyAt: null });
+  const sourceRef = useRef(null);
+  const spinnerRef = useRef(null);
+  const pixelsRef = useRef({ source: null, result: null, resultReadyAt: null, sourceReadyAt: null });
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const particlesRef = useRef(null);
@@ -75,8 +79,13 @@ function PixelStorm({ source, result, active, onComplete }) {
 
   useEffect(() => {
     let live = true;
+    pixelsRef.current.source = null;
+    pixelsRef.current.sourceReadyAt = null;
     loadPixels(source, GRID_W, GRID_H).then((before) => {
-      if (live) pixelsRef.current.source = before;
+      if (live) {
+        pixelsRef.current.source = before;
+        pixelsRef.current.sourceReadyAt = performance.now();
+      }
     });
     return () => { live = false; };
   }, [source]);
@@ -96,7 +105,6 @@ function PixelStorm({ source, result, active, onComplete }) {
 
   useEffect(() => {
     if (!active) return undefined;
-    const startedAt = performance.now();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const canvases = [backRef.current, frontRef.current];
     const count = GRID_W * GRID_H;
@@ -133,7 +141,7 @@ function PixelStorm({ source, result, active, onComplete }) {
       // Small counter-rotating pockets and different orbital planes break up
       // the single, tidy spiral while retaining the stone's gravitational pull.
       const localSpin = coherence < -0.2 ? -spinDirection : spinDirection;
-      positions[p] = x; positions[p + 1] = y; positions[p + 2] = (Math.random() - 0.5) * 6;
+      positions[p] = x; positions[p + 1] = y; positions[p + 2] = 0;
       velocities[p] = inwardTurnX * radialSpeed - inwardTurnY * tangentSpeed * localSpin;
       velocities[p + 1] = inwardTurnY * radialSpeed + inwardTurnX * tangentSpeed * localSpin;
       velocities[p + 2] = (coherence * 1.6 + (Math.random() - 0.5) * 1.4) * orbitalSpeed;
@@ -163,9 +171,16 @@ function PixelStorm({ source, result, active, onComplete }) {
       const delta = lastPaint ? Math.min(0.05, Math.max(0.012, (now - lastPaint) / 1000)) : 1 / 30;
       lastPaint = now;
       sizeCanvases();
-      const { source: before, result: after, resultReadyAt } = pixelsRef.current;
-      const elapsed = now - startedAt;
-      const afterReady = resultReadyAt === null ? null : now - resultReadyAt;
+      const { source: before, result: after, resultReadyAt, sourceReadyAt } = pixelsRef.current;
+      // Start the intro once the source pixels are ready, not while they load.
+      const introElapsed = sourceReadyAt === null ? 0 : Math.max(0, now - sourceReadyAt);
+      const elapsed = Math.max(0, introElapsed - INTRO_MS);
+      const introMix = smooth(clamp01((introElapsed - PHOTO_HOLD_MS) / (INTRO_MS - PHOTO_HOLD_MS)));
+      if (sourceRef.current) sourceRef.current.style.opacity = String(1 - introMix);
+      if (spinnerRef.current) spinnerRef.current.style.opacity = String(introMix);
+      canvases.forEach((canvas) => { if (canvas) canvas.style.opacity = String(smooth(clamp01(introElapsed / INTRO_MS))); });
+      const afterReady = resultReadyAt === null || sourceReadyAt === null || introElapsed < INTRO_MS
+        ? null : now - Math.max(resultReadyAt, sourceReadyAt + INTRO_MS);
       const colorElapsed = afterReady === null ? 0 : afterReady;
       const width = canvases[0]?.width || 1;
       const height = canvases[0]?.height || 1;
@@ -233,16 +248,19 @@ function PixelStorm({ source, result, active, onComplete }) {
         const perspective = cameraDistance / Math.max(28, cameraDistance - z);
         const screenX = GRID_W / 2 + (drawX - GRID_W / 2) * perspective;
         const screenY = GRID_H / 2 + (drawY - GRID_H / 2) * perspective - z * 0.3;
-        const colorMix = reduceMotion ? 1 : smooth(clamp01((colorElapsed - particle.colorDelay) / particle.colorDuration));
+        const colorMix = afterReady === null ? 0 : reduceMotion ? 1 : smooth(clamp01((colorElapsed - particle.colorDelay) / particle.colorDuration));
         const ctx = ctxs[z > 0 ? 1 : 0];
         if (!ctx) continue;
-        const shade = z > 0 ? 1 + Math.min(0.16, z / 240) : 0.8 + Math.max(-0.12, z / 320);
-        const particleW = cellW * particle.size * perspective;
-        const particleH = cellH * particle.size * perspective;
+        const launch = reduceMotion ? 0 : smooth(clamp01((elapsed - particle.launchDelay) / (DRIFT_MS - particle.launchDelay)));
+        const depthShade = z > 0 ? 1 + Math.min(0.16, z / 240) : 0.8 + Math.max(-0.12, z / 320);
+        const shade = 1 + (depthShade - 1) * launch;
+        const particleSize = 1 + (particle.size - 1) * launch;
+        const particleW = cellW * particleSize * perspective;
+        const particleH = cellH * particleSize * perspective;
         const sourceR = colorFrom[offset]; const sourceG = colorFrom[offset + 1]; const sourceB = colorFrom[offset + 2];
         const targetR = colorTo[offset]; const targetG = colorTo[offset + 1]; const targetB = colorTo[offset + 2];
         ctx.fillStyle = `rgb(${Math.round((sourceR + (targetR - sourceR) * colorMix) * shade)} ${Math.round((sourceG + (targetG - sourceG) * colorMix) * shade)} ${Math.round((sourceB + (targetB - sourceB) * colorMix) * shade)})`;
-        ctx.globalAlpha = 0.65 + dock * 0.35;
+        ctx.globalAlpha = 1 - 0.35 * launch * (1 - dock);
         ctx.fillRect(screenX * cellW - particleW / 2, screenY * cellH - particleH / 2, particleW, particleH);
       }
       ctxs.forEach((ctx) => { if (ctx) ctx.globalAlpha = 1; });
@@ -261,8 +279,10 @@ function PixelStorm({ source, result, active, onComplete }) {
 
   return (
     <>
-      <canvas className="processing__pixels processing__pixels--back" ref={backRef} aria-hidden="true" />
-      <canvas className="processing__pixels processing__pixels--front" ref={frontRef} aria-hidden="true" />
+      <img className="processing__intro-photo" ref={sourceRef} src={source} alt="Your original portrait" />
+      <video className={`processing__spinner ${stormComplete ? "is-leaving" : ""}`} ref={spinnerRef} style={{ opacity: 0 }} src={spinner} autoPlay loop muted playsInline aria-hidden="true" />
+      <canvas className="processing__pixels processing__pixels--back" ref={backRef} style={{ opacity: 0 }} aria-hidden="true" />
+      <canvas className="processing__pixels processing__pixels--front" ref={frontRef} style={{ opacity: 0 }} aria-hidden="true" />
     </>
   );
 }
@@ -283,12 +303,9 @@ export default function Processing({ progress, result, source, style, onComplete
     <section className="processing" aria-live="polite">
       <div className="processing__copy">
         <div className="processing__art" aria-label="Your portrait pixels orbit the spinning stone and gather into their new form">
-          <PixelStorm source={source} result={result?.styled} active onComplete={() => setStormComplete(true)} />
-          <video
-            className={`processing__spinner ${stormComplete ? "is-leaving" : ""}`}
-            src={`${import.meta.env.BASE_URL}thesis/stone.${safari ? "mov" : "webm"}`}
-            autoPlay loop muted playsInline aria-hidden="true"
-          />
+          <PixelStorm source={source} result={result?.styled} active stormComplete={stormComplete}
+            spinner={`${import.meta.env.BASE_URL}thesis/stone.${safari ? "mov" : "webm"}`}
+            onComplete={() => setStormComplete(true)} />
           {result && <img className={`processing__result ${stormComplete ? "is-visible" : ""}`} src={result.styled} alt="Your finished portrait" />}
         </div>
         <p className="eyebrow">Every / {style?.label || "Editorial transformation"}</p>

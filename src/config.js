@@ -23,32 +23,20 @@ export const defaultExperience = {
     print: false,
   },
   modes: [
-    { id: "every", label: "Every", description: "Four focused Every editorial transformations.", color: "#2B83EE", developerOnly: false },
+    { id: "every", label: "Every", description: "Two Greco-Roman emperor transformations.", color: "#2B83EE", developerOnly: false },
   ],
   everyStyles: [
     {
-      id: "weights-measures",
-      label: "Weights & Measures",
-      description: "Your portrait mapped with architectural lines, proportion, and precision.",
-      preview: `${import.meta.env.BASE_URL}style-previews/weights-measures.jpg`,
+      id: "emperor-cyan",
+      label: "Imperial Cyan",
+      description: "Marble emperors, punk engraving, and a vivid cyan temple.",
+      preview: `${import.meta.env.BASE_URL}thesis/img/profile.svg`,
     },
     {
-      id: "digital-twins",
-      label: "Digital Twins",
-      description: "Meet the android counterpart built from your pose and personality.",
-      preview: `${import.meta.env.BASE_URL}style-previews/digital-twins.jpg`,
-    },
-    {
-      id: "future-of-work",
-      label: "Future of Work",
-      description: "Wear the strange, tactile interfaces of work after automation.",
-      preview: `${import.meta.env.BASE_URL}style-previews/future-of-work.jpg`,
-    },
-    {
-      id: "black-white",
-      label: "Black & White",
-      description: "Become a hand-engraved portrait against a vivid field of color.",
-      preview: `${import.meta.env.BASE_URL}style-previews/black-white.jpg`,
+      id: "emperor-ink",
+      label: "Imperial Ink",
+      description: "Marble emperors in a gritty, antique engraving treatment.",
+      preview: `${import.meta.env.BASE_URL}thesis/img/profile.svg`,
     },
   ],
 };

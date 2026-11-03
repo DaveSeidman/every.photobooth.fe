@@ -21,7 +21,7 @@ const original = `${import.meta.env.BASE_URL}thesis/img/profile.svg`;
 export default function DesignPreview() {
   const { screen: requested = "attract" } = useParams();
   const screen = screens.some(([id]) => id === requested) ? requested : "attract";
-  const [style, setStyle] = useLoggedState("DesignPreview.style", defaultExperience.everyStyles[3]);
+  const [style, setStyle] = useLoggedState("DesignPreview.style", defaultExperience.everyStyles[0]);
   const [replay, setReplay] = useLoggedState("DesignPreview.replay", 0);
   const go = (id) => { window.location.hash = `/preview/${id}`; };
   const sync = useMemo(() => ({

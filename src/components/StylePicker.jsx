@@ -3,15 +3,15 @@ export default function StylePicker({ photo, styles, onSelect, onRetake }) {
     <section className="style-picker" aria-labelledby="style-picker-title">
       <header className="style-picker__header">
         <div>
-          <p className="eyebrow">Four possible futures</p>
-          <h1 id="style-picker-title">Choose your <em>future</em></h1>
+          <p className="eyebrow">Two imperial portraits</p>
+          <h1 id="style-picker-title">Choose your <em>empire</em></h1>
         </div>
         <div className="style-picker__source">
           <img src={photo} alt="Your captured portrait" />
           <button type="button" className="text-link-button" onClick={onRetake}>Retake photo</button>
         </div>
       </header>
-      <div className="style-picker__grid">
+      <div className="style-picker__grid style-picker__grid--two">
         {styles.map((style, index) => (
           <button
             type="button"
