@@ -30,10 +30,11 @@ export default function CameraPhoto({ depth = "normal", visible = true, developi
         lastPaint=now;
         const t=(now-started)/1000;
         const blend=Math.min(1,t);
-        const z=(Math.sin(t*.6+phases[0])*14+Math.sin(t*1.13+phases[1])*4)*blend;
-        const rx=(Math.sin(t*.37+phases[2])*1.2+Math.sin(t*.89+phases[4])*.25)*blend;
-        const ry=(Math.sin(t*.43+phases[3])*1.8+Math.sin(t*1.07+phases[5])*.35)*blend;
-        const rz=Math.sin(t*.31+phases[4])*.45*blend;
+        const motionTime=t*1.35;
+        const z=(Math.sin(motionTime*.6+phases[0])*19+Math.sin(motionTime*1.13+phases[1])*5)*blend;
+        const rx=(Math.sin(motionTime*.37+phases[2])*1.6+Math.sin(motionTime*.89+phases[4])*.35)*blend;
+        const ry=(Math.sin(motionTime*.43+phases[3])*2.4+Math.sin(motionTime*1.07+phases[5])*.45)*blend;
+        const rz=Math.sin(motionTime*.31+phases[4])*.6*blend;
         node.style.transform=`perspective(1200px) translateZ(${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
       }
       frame=requestAnimationFrame(paint);
