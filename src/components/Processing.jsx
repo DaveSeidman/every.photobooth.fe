@@ -19,6 +19,9 @@ const COLOR_MS = 2000;
 const DOCK_STAGGER_MS = 700;
 const DOCK_DURATION_MS = 1000;
 const FINISH_MS = COLOR_MS + DOCK_STAGGER_MS + DOCK_DURATION_MS;
+// Treat the spinning video as a plane forward of the storm center.
+// Only particles that pass this depth render over the rock.
+const ROCK_DEPTH = 14;
 const GRAVITY = 2400;
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const smooth = (value) => value * value * (3 - 2 * value);
@@ -249,7 +252,7 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
         const screenX = GRID_W / 2 + (drawX - GRID_W / 2) * perspective;
         const screenY = GRID_H / 2 + (drawY - GRID_H / 2) * perspective - z * 0.3;
         const colorMix = afterReady === null ? 0 : reduceMotion ? 1 : smooth(clamp01((colorElapsed - particle.colorDelay) / particle.colorDuration));
-        const ctx = ctxs[z > 0 ? 1 : 0];
+        const ctx = ctxs[z > ROCK_DEPTH ? 1 : 0];
         if (!ctx) continue;
         const launch = reduceMotion ? 0 : smooth(clamp01((elapsed - particle.launchDelay) / (DRIFT_MS - particle.launchDelay)));
         const depthShade = z > 0 ? 1 + Math.min(0.16, z / 240) : 0.8 + Math.max(-0.12, z / 320);
