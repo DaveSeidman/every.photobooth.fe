@@ -1,17 +1,25 @@
 # Thesis photobooth — November 5, 2026, in Brooklyn
 
+This is the running list of unfinished work and event preparation. Update it as tasks are completed or new issues appear.
+
 ## Remaining work
+
+- [ ] Practice putting the iPad into the stand and taking it out; aim to avoid removing it during the show.
+- [ ] Log into the TeamViewer desktop app on the desktop computer (currently using TeamViewer through the web).
+- [ ] Confirm the new print Mac uses the DNP QW410 driver, then get one successful physical print and verify the dashboard reports Printed.
+- [ ] Pull the latest print-server changes on the new Mac, set `NGROK_URL=https://genuine-bee-humble.ngrok-free.app` in `.env`, and verify `npm run start:booth` starts the server, fixed tunnel, and keep-awake process.
+- [ ] Test Home Screen app fullscreen entry/recovery and Guided Access on the actual iPad.
 
 - [ ] Get the rest of emperor prompt 2 (currently supplied only through “deep shadows…”).
 - [x] Generate both emperor thumbnails from the original couple photo and replace the temporary thumbnails.
 - [ ] Review the emperor thumbnails and new capture/development animation on the iPad.
 - [ ] On the iPad, test taps, corner pulls, incomplete pulls, and touch cancellation for attached ticket buttons.
 - [ ] Check every screen in portrait at 820 × 1180, then on the actual iPad 11-inch A16 in Safari.
-- [ ] Set up the iPad's secure camera connection to the Mac; verify framing, brightness, charging, and screen lock settings.
+- [ ] Verify camera permission, framing, brightness, charging, and screen lock settings in the iPad Home Screen app.
 - [ ] Demo the complete capture → parallel generations → photo strip → print → QR download flow.
 - [ ] Exercise F1 simulations for no internet, AI error, and the 2× timeout; switch back to Normal operation afterward.
 - [ ] Verify local operation with WAN disconnected while the iPad and Mac remain connected on the same LAN.
-- [ ] Confirm offline loading/caching requirements; an uncached hosted site still needs internet to load.
+- [ ] Confirm offline loading/caching and backend requirements: the hosted booth still needs internet to reach Render; local image filters alone do not provide fully offline operation.
 - [ ] Test paper-out, printer disconnect, and recovery without duplicate prints.
 - [ ] Confirm Mac/backend/print-server startup and recovery after restart.
 - [ ] Review fallback prints and the ticket layout on actual stock.
