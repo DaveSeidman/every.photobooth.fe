@@ -1,3 +1,4 @@
+import OperatorPanel from "./components/OperatorPanel.jsx";
 import { track } from "./lib/analytics.js";
 import { downloadLogs, clearLogs, logEvent } from "./lib/logger.js";
 import { timers } from "./lib/timers.js";
@@ -438,6 +439,7 @@ export default function App() {
 
   return (
     <HashRouter>
+      <OperatorPanel />
       <Routes>
         <Route path="/" element={<Booth />} />
         <Route path="/handoff/:photoId" element={<HandoffPreview />} />

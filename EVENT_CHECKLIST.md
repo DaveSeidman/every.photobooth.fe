@@ -24,6 +24,12 @@ This is the running list of unfinished work and event preparation. Update it as 
 - [ ] Confirm Mac/backend/print-server startup and recovery after restart.
 - [ ] Review fallback prints and the ticket layout on actual stock.
 
+## Refreshing the iPad without removing it from the stand
+
+Hold one finger in each upper corner of the screen for two seconds. The touch zones cover the upper 140 pixels and outer 96 pixels, so place fingers just below the system status bar if visible. When **Booth controls** opens, tap **Reload Latest Version** or **Cancel**. Reload requests a fresh app document and resets the current booth session. Guided Access stays enabled. This is an operator shortcut, not an authenticated admin login.
+
+- [ ] Practice the two-corner refresh gesture with the iPad mounted and Guided Access enabled.
+
 ## Important links
 
 - [ ] Keep this link list bookmarked or open on the operator's computer for the event.
