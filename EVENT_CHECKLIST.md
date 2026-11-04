@@ -2,6 +2,23 @@
 
 This is the running list of unfinished work and event preparation. Update it as tasks are completed or new issues appear.
 
+## Return visit: November 5, before opening
+
+The booth was left running successfully on November 4. The newest tap-response changes and hidden refresh shortcut were deployed afterward and may not yet be loaded on the iPad. Start by checking the existing setup before restarting anything.
+
+- [ ] Log into the TeamViewer desktop app on the desktop computer and verify remote access to the event Mac, if that is the intended connection.
+- [ ] **Top up Fal.ai credits**, then check the balance again before opening.
+- [ ] Bring the packing-list spares below, particularly two copies of every cable.
+- [ ] Recheck power, charging, internet, printer USB connection, media and ribbon, and Mac sleep prevention.
+- [ ] Confirm the fixed print tunnel is reachable and the admin page reports the current queue correctly.
+- [ ] Decide whether to load the latest frontend; allow time to retest after any refresh. If the hidden shortcut is not present in the loaded version, one normal app close/reopen is needed first.
+- [ ] Practice mounting/removing the iPad and entering/exiting Guided Access before guests arrive.
+- [ ] Test quick taps, Retake → countdown, generation reveal, one physical print, and QR save/share from a phone; confirm the job reaches Printed.
+- [ ] Test two phones interacting with the same takeaway without jumpy motion or duplicate printing.
+- [ ] Run fallback simulations, then restore Normal operation. Confirm the plan for an actual internet outage; the hosted booth still needs Render connectivity.
+- [ ] Confirm printer pause/disconnect/media recovery and server/tunnel restart steps.
+- [ ] Immediately before opening: confirm automatic printing, reset the completed counter, and leave the live status dashboard open.
+
 ## Remaining work
 
 - [ ] Practice putting the iPad into the stand and taking it out; aim to avoid removing it during the show.
