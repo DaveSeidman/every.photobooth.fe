@@ -269,6 +269,7 @@ function Booth() {
     setPhase("camera");
     try {
       await cameraRef.current.start();
+      startCountdown();
     } catch {
       setError("Camera access is unavailable. Check browser permissions and try again.");
     }
@@ -337,7 +338,7 @@ function Booth() {
         phase === "review" ? <ReviewActions onRetake={retake} onApprove={approvePhoto} /> :
         phase === "attract" ? <TicketButton key="start" className="primary-button" onSelect={begin} data-testid="begin-button">Start your Thesis</TicketButton> :
         phase === "camera" || (phase === "error" && !captureBlob) ? <>
-          <TicketButton key="capture" className="shutter-button" onSelect={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting" || startLeaving} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</TicketButton>
+          <TicketButton key="capture" className="shutter-button" onSelect={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting"} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</TicketButton>
         </> : null
       }>
         <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} photo={portraitDeveloped && result ? result.styled : originalPhoto} imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} resultReady={portraitDeveloped} revealing={phase === "camera-reveal"} countdown={phase === "countdown" ? count : null} onDiagnostics={setCameraDiagnostics} onPresenceChange={setFacePresent}>

@@ -15,7 +15,7 @@ export function installFirstTapFullscreen({ doc = document, pageLocation = windo
     // supply that; the next trusted click restores it without consuming the tap.
   };
   const tap = (event) => {
-    if (!event.isTrusted || disposed || pending || active() || pageLocation.hash?.startsWith("#/takeaway/")) return;
+    if (event.touches?.length || !event.isTrusted || disposed || pending || active() || pageLocation.hash?.startsWith("#/takeaway/")) return;
     const root = doc.documentElement;
     const request = root.requestFullscreen || root.webkitRequestFullscreen;
     if (!request) { if (!hasRequested) log("fullscreen.unavailable", {}, "warn"); hasRequested = true; return; }
@@ -32,11 +32,13 @@ export function installFirstTapFullscreen({ doc = document, pageLocation = windo
     } catch (error) { pending = false; log("fullscreen.request-failed", { error }, "warn"); }
   };
   doc.addEventListener("click", tap, true);
+  doc.addEventListener("touchend", tap, true);
   doc.addEventListener("fullscreenchange", change, true);
   doc.addEventListener("webkitfullscreenchange", change, true);
   return () => {
     disposed = true;
     doc.removeEventListener("click", tap, true);
+    doc.removeEventListener("touchend", tap, true);
     doc.removeEventListener("fullscreenchange", change, true);
     doc.removeEventListener("webkitfullscreenchange", change, true);
   };

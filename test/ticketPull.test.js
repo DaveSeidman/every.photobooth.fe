@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ticketPull, ticketLightPoint } from "../src/lib/ticketPull.js";
+import { ticketPull, ticketLightPoint, isTicketTap } from "../src/lib/ticketPull.js";
 
 const pull = (values) => ticketPull({ dx: 0, dy: 0, width: 280, grabX: .9, ...values });
 test("pulling from the right peels downward around the top-left attachment", () => {
@@ -44,4 +44,11 @@ test("grab highlight stays beneath the finger after the ticket translates and ro
   const screenY = (local.x - pivot) * Math.sin(angle) + local.y * Math.cos(angle) + pull.y;
   assert.ok(Math.abs(screenX - (input.startX + input.dx)) < .0001);
   assert.ok(Math.abs(screenY - (input.startY + input.dy)) < .0001);
+});
+
+test('quick taps tolerate ordinary finger jitter in screen pixels but keep real drags distinct',()=>{
+  assert.equal(isTicketTap({moved:false,startedAt:100},150),true);
+  assert.equal(isTicketTap({moved:true,maxTravel:16,startedAt:100},180),true);
+  assert.equal(isTicketTap({moved:true,maxTravel:40,startedAt:100},180),false);
+  assert.equal(isTicketTap({moved:true,maxTravel:16,startedAt:100},900),false);
 });

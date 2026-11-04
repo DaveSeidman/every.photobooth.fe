@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { logEvent } from "../lib/logger.js";
-import { ticketPull, ticketLightPoint } from "../lib/ticketPull.js";
+import { ticketPull, ticketLightPoint, isTicketTap } from "../lib/ticketPull.js";
 
 // Native touch events permit a real pull while preserving native tap/keyboard clicks.
 export default function TicketButton({ onSelect, className = "primary-button", children, disabled = false, onActivate, onInteraction, ...props }) {
@@ -34,7 +34,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       animation?.cancel(); reset();
       gestureId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const rect = button.getBoundingClientRect();
-      drag = { x, y, id, kind, moved: false, dx: 0, dy: 0, width: button.offsetWidth || rect.width, screenScale: rect.width / (button.offsetWidth || rect.width), grabX: Math.max(0, Math.min(1, (x - rect.left) / rect.width)), loggedAt: 0 };
+      drag = { x, y, id, kind, startedAt: performance.now(), maxTravel: 0, moved: false, dx: 0, dy: 0, width: button.offsetWidth || rect.width, screenScale: rect.width / (button.offsetWidth || rect.width), grabX: Math.max(0, Math.min(1, (x - rect.left) / rect.width)), loggedAt: 0 };
       drag.startX = drag.grabX * drag.width;
       drag.startY = (y - rect.top) / drag.screenScale;
       button.style.setProperty("--grab-x", `${drag.startX}px`);
@@ -46,6 +46,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
     };
     const move = (x, y) => {
       if (!drag) return;
+      drag.maxTravel = Math.max(drag.maxTravel, Math.hypot(x - drag.x, y - drag.y));
       drag.dx = (x - drag.x) / drag.screenScale; drag.dy = (y - drag.y) / drag.screenScale;
       drag.moved ||= Math.hypot(drag.dx, drag.dy) > 8;
       const pull = drag.moved ? ticketPull(drag) : { origin: 0, x: 0, y: 0, angle: 0 };
@@ -92,6 +93,12 @@ export default function TicketButton({ onSelect, className = "primary-button", c
     const finish = (cancelled = false) => {
       if (!drag) return false;
       const current = drag; drag = null;
+      if (!cancelled && current.kind === "touch" && isTicketTap(current, performance.now())) {
+        // Do not wait for Safari's synthesized click; touchmove cancellation can
+        // suppress it. This also preserves native sharing's user activation.
+        detach("tap");
+        return true;
+      }
       if (!current.moved) { if (cancelled) { delete button.dataset.illuminated; emit("cancel"); } logEvent(cancelled ? "ticket.cancel" : "ticket.tap-ready", { label: button.textContent }); return false; }
       suppressClickUntil.current = performance.now() + 1000;
       const pull = ticketPull(current);

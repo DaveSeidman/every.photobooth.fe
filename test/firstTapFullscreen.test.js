@@ -22,7 +22,7 @@ test('first genuine tap requests fullscreen synchronously once without consuming
   fixture.tap(false);assert.equal(calls,0);
   fixture.tap();assert.equal(calls,1);
   fixture.tap();assert.equal(calls,1);
-  assert.equal(fixture.listeners.size,3);
+  assert.equal(fixture.listeners.size,4);
   await Promise.resolve();
 });
 test('legacy Safari fullscreen method is supported',()=>{
@@ -81,4 +81,11 @@ test('a route change preserves phone sharing',()=>{
   const listeners=new Map(),pageLocation={origin:'https://photobooth.lightboxlive.io'};
   installFirstTapFullscreen({doc:{documentElement:{requestFullscreen(){assert.fail('Phone share gesture must remain available');}},addEventListener:(type,handler)=>listeners.set(type,handler)},pageLocation});
   pageLocation.hash='#/takeaway/portrait';listeners.get('click')({isTrusted:true});
+});
+
+test('native touch release can enter fullscreen before a ticket suppresses its synthesized click',async()=>{
+  let calls=0;const fixture=setup(undefined,()=>{calls++;return Promise.resolve();});
+  fixture.listeners.get('touchend')({isTrusted:true,touches:[{}]});assert.equal(calls,0);
+  fixture.listeners.get('touchend')({isTrusted:true,touches:[]});assert.equal(calls,1);
+  fixture.tap();assert.equal(calls,1);await settle();
 });
