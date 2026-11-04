@@ -20,5 +20,5 @@ export function ticketLightPoint({ startX, startY, dx, dy, width, pull }) {
 
 // Measure tap tolerance in screen pixels, independent of the Polaroid scale.
 export function isTicketTap({ moved, maxTravel = 0, startedAt }, now) {
-  return !moved || (maxTravel <= 18 && now - startedAt <= 600);
+  return !moved || (maxTravel <= 26 && now - startedAt <= 700);
 }

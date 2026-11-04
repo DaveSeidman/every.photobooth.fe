@@ -1,3 +1,4 @@
+import { animateDetachedTicket } from "../lib/detachedTicket.js";
 import { useEffect, useRef } from "react";
 import { logEvent } from "../lib/logger.js";
 import { ticketPull, ticketLightPoint, isTicketTap } from "../lib/ticketPull.js";
@@ -68,6 +69,7 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       if (blocked.current || latest.current.disabled) return;
       blocked.current = true;
       animation?.cancel();
+      if (method !== "pull") button.style.transform = "";
       suppressClickUntil.current = performance.now() + 1000;
       const origin = pull?.origin ?? (lastGrabX.current >= .5 ? 0 : 100);
       const direction = origin === 0 ? 1 : -1;
@@ -81,12 +83,21 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       catch(error) { logEvent("ticket.activation-failed", {error}, "error"); }
       logEvent("ticket.detached", { label: button.textContent, method });
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!latest.current.onActivate) {
+        // Navigation/capture starts on release, independently of the visual tear.
+        try { animateDetachedTicket(button, {reduced}); }
+        catch(error) { logEvent("ticket.visual-failed", {error}, "warn"); }
+        button.style.visibility = "hidden";
+        logEvent("ticket.action-started", {label:button.textContent,method});
+        latest.current.onSelect?.();
+        return;
+      }
       animation = button.animate([
         { transform: button.style.transform || "translate3d(0,0,0) rotate(0deg)", opacity: 1, offset: 0, "--tear-progress": String(pull?.progress || 0) },
         { transform: `translate3d(${x + direction * 3}px, ${y + 8}px, 0) rotate(${angle + direction * 8}deg)`, opacity: 1, offset: .28, "--tear-progress": ".45" },
         { transform: `translate3d(${x + direction * 8}px, ${y + 38}px, 0) rotate(${angle + direction * 16}deg)`, opacity: 1, offset: .55, "--tear-progress": "1" },
         { transform: `translate3d(${x + direction * 24}px, ${y + 190}px, 0) rotate(${angle + direction * 28}deg)`, opacity: 0, offset: 1, "--tear-progress": "1" },
-      ], { duration: reduced ? 1 : pull ? 300 : 480, easing: "cubic-bezier(.4,0,.8,.4)", fill: "forwards" });
+      ], { duration: reduced ? 1 : pull ? 240 : 260, easing: "cubic-bezier(.4,0,.8,.4)", fill: "forwards" });
       animation.finished.then(() => { if (!disposed) latest.current.onSelect?.(); }).catch(() => {});
     };
     animateSelection.current = (method) => detach(method);

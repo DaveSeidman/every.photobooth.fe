@@ -29,7 +29,7 @@ export function installKioskTouchGuard({ doc = document, viewportWidth = () => w
     const touch=Array.from(event.changedTouches || []).find(t=>t.identifier===current.id);
     if(!touch)return;
     const distance=Math.max(current.maxTravel,Math.hypot(touch.clientX-current.x,touch.clientY-current.y));
-    if(distance<=18 && performance.now()-current.started<=600 && !current.button.disabled && current.button.isConnected) {
+    if(distance<=26 && performance.now()-current.started<=700 && !current.button.disabled && current.button.isConnected) {
       event.preventDefault();current.button.click();
     }
   };
