@@ -1,3 +1,5 @@
+import { preparePortraitReveal } from "../lib/portraitReveal.js";
+import { logEvent } from "../lib/logger.js";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useRef } from "react";
@@ -35,8 +37,8 @@ function loadPixels(src, width, height) {
   return new Promise((resolve) => {
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.onload = () => {
-      try { resolve(readPixels(image, width, height)); } catch { resolve(null); }
+    image.onload = async () => {
+      try { await image.decode?.(); resolve(readPixels(image, width, height)); } catch { resolve(null); }
     };
     image.onerror = () => resolve(null);
     image.src = src;
@@ -48,7 +50,7 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
   const frontRef = useRef(null);
   const sourceRef = imageRef;
   const spinnerRef = useRef(null);
-  const pixelsRef = useRef({ source: null, result: null, resultReadyAt: null, sourceReadyAt: null });
+  const pixelsRef = useRef({ source: null, result: null, resultReadyAt: null, sourceReadyAt: null, resultSrc: null, preparing: false, retryAt: 0, version: 0 });
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const particlesRef = useRef(null);
@@ -89,11 +91,15 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
     let live = true;
     pixelsRef.current.result = null;
     pixelsRef.current.resultReadyAt = null;
+    pixelsRef.current.resultSrc = result;
+    pixelsRef.current.preparing = false;
+    pixelsRef.current.retryAt = 0;
+    pixelsRef.current.version++;
     if (!result) return () => { live = false; };
     loadPixels(result, GRID_W, GRID_H).then((after) => {
       if (!live) return;
       pixelsRef.current.result = after;
-      pixelsRef.current.resultReadyAt = performance.now();
+      // The full-size photo slot is prepared once the original intro is hidden.
     });
     return () => { live = false; };
   }, [result]);
@@ -174,6 +180,25 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
       if (sourceRef.current) sourceRef.current.style.setProperty("--image-opacity", String(1 - introMix));
       if (spinnerRef.current) spinnerRef.current.style.opacity = String(introMix);
       canvases.forEach((canvas) => { if (canvas) canvas.style.opacity = String(smooth(clamp01(introElapsed / INTRO_MS))); });
+      // Swap the existing image under the storm well before the reveal. Safari
+      // can keep showing the old decoded frame after a src change, even when a
+      // separate Image has loaded; wait for this exact DOM element to decode.
+      if (introElapsed >= INTRO_MS && after && resultReadyAt === null && !pixelsRef.current.preparing && now >= pixelsRef.current.retryAt && sourceRef.current) {
+        const state = pixelsRef.current;
+        const version = state.version;
+        state.preparing = true;
+        logEvent("portrait.preload-started");
+        preparePortraitReveal(sourceRef.current, state.resultSrc).then(() => {
+          if (disposed || state.version !== version) return;
+          state.resultReadyAt = performance.now();
+          logEvent("portrait.preload-ready");
+        }).catch(error => {
+          if (disposed || state.version !== version) return;
+          state.preparing = false;
+          state.retryAt = performance.now() + 1500;
+          logEvent("portrait.preload-failed", {error, retryAfterMs:1500}, "error");
+        });
+      }
       const afterReady = resultReadyAt === null || sourceReadyAt === null || introElapsed < INTRO_MS
         ? null : now - Math.max(resultReadyAt, sourceReadyAt + INTRO_MS);
       const colorElapsed = afterReady === null ? 0 : afterReady;
