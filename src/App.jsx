@@ -1,3 +1,4 @@
+import { track } from "./lib/analytics.js";
 import { downloadLogs, clearLogs, logEvent } from "./lib/logger.js";
 import { timers } from "./lib/timers.js";
 import { useLoggedState } from "./hooks/useLoggedState.js";
@@ -192,6 +193,7 @@ function Booth() {
   }, []);
 
   const begin = async () => {
+    track("booth_start");
     setError("");
     if (phase === "attract") {
       setStartLeaving(true);
@@ -222,6 +224,7 @@ function Booth() {
     catch (error) { URL.revokeObjectURL(photo); throw error; }
     clearCapture();
     setCaptureBlob(blob);
+    track("photo_captured");
     setOriginalPhoto(photo);
     // Swap to the frozen exposure inside the existing photo, then develop it.
     transitionTimerRef.current = timers.setTimeout(() => {
@@ -260,6 +263,7 @@ function Booth() {
   }, [phase]);
 
   const retake = async () => {
+    track("photo_retake");
     clearCapture();
     setError("");
     setPhase("camera");
@@ -271,11 +275,14 @@ function Booth() {
   };
 
   const approvePhoto = () => {
+    track("photo_approved");
     transitionTo("styles");
   };
 
   const processPhoto = async (style) => {
     if (!captureBlob) return;
+    const analyticsStarted = performance.now();
+    track("generation_start", {style:style.id});
     setSelectedStyle(style);
     setPortraitDeveloped(false);
     setProgress(5);
@@ -289,6 +296,7 @@ function Booth() {
         failureSimulation,
       });
       const output = response.output;
+      track("generation_complete", {style:style.id, mode:output.generationMode, durationMs:performance.now()-analyticsStarted});
       setProgress(100);
       setResult({
         styled: output.photoId ? photoUrl(output.photoId) : (output.styled || output.variantA || output.past),
@@ -299,6 +307,7 @@ function Booth() {
         generationMode: output.generationMode,
       });
     } catch (requestError) {
+      track("generation_error", {style:style.id, durationMs:performance.now()-analyticsStarted});
       setError(requestError.message);
       setPhase("error");
     }

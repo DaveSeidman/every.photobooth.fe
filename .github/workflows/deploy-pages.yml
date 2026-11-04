@@ -33,6 +33,7 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
           VITE_PUBLIC_APP_URL: https://photobooth.lightboxlive.io/every
           VITE_BASE_PATH: /every/
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
       - name: Assemble Pages site
         run: |
           mkdir -p _site/every

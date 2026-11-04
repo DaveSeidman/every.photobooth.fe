@@ -1,3 +1,4 @@
+import { track } from "../lib/analytics.js";
 import TicketButton from "./TicketButton.jsx";
 import StampFrame from "./StampFrame.jsx";
 import { timers } from "../lib/timers.js";
@@ -11,6 +12,8 @@ import DeveloperScreenLabel from "./DeveloperScreenLabel.jsx";
 
 export default function Takeaway() {
   const { photoId } = useParams();
+  const analyticsVisit = useRef(null);
+  const analyticsLoaded = useRef(null);
   const [searchParams] = useSearchParams();
   const fallback = searchParams.get("fallback") === "1";
   const [sharing, setSharing] = useLoggedState("Takeaway.sharing", false);
@@ -30,6 +33,12 @@ export default function Takeaway() {
   const sync = usePhotoSync(fallback ? null : photoId, "phone");
   const timing = useHandoffTiming(sync.handoff, sync.clockOffset, "phone");
 
+  useEffect(() => {
+    if (photoId && !fallback && analyticsVisit.current !== photoId) { analyticsVisit.current=photoId; track("takeaway_view"); }
+  }, [photoId, fallback]);
+  useEffect(() => {
+    if (photoId && !fallback && imageStatus === "loaded" && analyticsLoaded.current !== photoId) { analyticsLoaded.current=photoId; track("portrait_loaded"); }
+  }, [photoId, fallback, imageStatus]);
   useEffect(() => {
     setRevealed(false); setMessage("");
     setImageStatus(imageRef.current?.complete && imageRef.current.naturalWidth ? "loaded" : "loading");
@@ -61,7 +70,10 @@ export default function Takeaway() {
     gestureRef.current = event;
     sync.sendTakeawayInteraction(event);
   };
-  const notify = (action) => sync.sendTakeawayInteraction({...gestureRef.current, action});
+  const notify = (action) => {
+    if (!fallback) track(action.replaceAll("-", "_"));
+    sync.sendTakeawayInteraction({...gestureRef.current, action});
+  };
   const share = () => {
     const file = fileRef.current;
     if (sharing || !ready || !file) return;
