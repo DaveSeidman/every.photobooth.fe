@@ -22,7 +22,7 @@ export function animateDetachedTicket(button, {reduced=false, doc=button.ownerDo
   Object.assign(layer.style,{position:'fixed',left:`${rect.left}px`,top:`${rect.top}px`,width:`${width}px`,height:`${height}px`,transformOrigin:'top left',transform:`scale(${rect.width/width},${rect.height/height})`,zIndex:'1000',pointerEvents:'none'});
   layer.append(copy);doc.body.append(layer);
   try {
-    const direction=button.style.transformOrigin.startsWith('100')?-1:1;
+    const direction=String(button.style.transformOrigin || '').startsWith('100')?-1:1;
     const animation=copy.animate([
       {transform:'translateY(0) rotate(0deg)',opacity:1},
       {transform:`translate(${direction*8}px,24px) rotate(${direction*12}deg)`,opacity:1,offset:.35},
