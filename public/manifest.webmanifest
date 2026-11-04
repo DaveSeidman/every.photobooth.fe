@@ -1,0 +1,11 @@
+{
+  "id": "./",
+  "name": "Every Photobooth",
+  "short_name": "Photobooth",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [{ "src": "every-favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

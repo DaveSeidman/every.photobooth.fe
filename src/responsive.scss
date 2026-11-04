@@ -651,3 +651,18 @@ button, select, input { touch-action: manipulation; }
     .camera.camera--revealing .camera__reveal { animation: none; }
   }
 }
+
+// Kiosk drags belong to tickets, not Safari's page scrolling / pull to refresh.
+html:has(.booth), body:has(.booth) { overscroll-behavior: none; }
+body:has(.booth) { position: fixed; inset: 0; overflow: hidden; }
+.booth > :not(.developer-controls) { touch-action: none; }
+.developer-controls { overscroll-behavior: contain; }
+
+// The booth and takeaway use app controls rather than native text/image menus.
+*, *::before, *::after {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+html, body { overscroll-behavior-x: none; }
+img, video { -webkit-user-drag: none; }

@@ -39,20 +39,14 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
       }, 900);
       return () => timers.clearTimeout(timeout);
     }
-    if (!window.Worker || !window.OffscreenCanvas || !window.createImageBitmap) {
-      logEvent("face-flow.unavailable");
-      canvas.dataset.effectState = "unavailable";
-      return undefined;
-    }
-
     const analysis = document.createElement("canvas");
     analysis.width = ANALYSIS_WIDTH; analysis.height = ANALYSIS_HEIGHT;
     const analysisContext = analysis.getContext("2d");
     if (!analysisContext) return undefined;
-    let worker;
-    try { worker = new Worker(new URL("../workers/faceFlow.worker.js", import.meta.url), { type: "module" }); }
-    catch { canvas.dataset.effectState = "unavailable"; return undefined; }
+    let worker, fallbackStarted=false, initTimeout;
     let stopped = false, workerReady = false, busy = false;
+    const init = {type:"init", width:ANALYSIS_WIDTH, height:ANALYSIS_HEIGHT,
+      assetsUrl:new URL(`${import.meta.env.BASE_URL}vision/`, window.location.href).href};
     let faces = [], particles = [], credit = 0;
     let present = false;
     const updatePresence = createFacePresence();
@@ -71,31 +65,44 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
     const observer = new ResizeObserver(resize);
     observer.observe(canvas); resize();
 
-    worker.onmessage = ({ data }) => {
-      if (stopped) return;
-      if (data.type === "ready") { logEvent("face-flow.ready"); workerReady = true; canvas.dataset.effectState = "tracking"; }
-      if (data.type === "flow") {
-        faces = data.faces; busy = false; lastFaceTime = performance.now();
-        canvas.dataset.faceCount = String(faces.length);
-      }
-      if (data.type === "error") {
-        logEvent("face-flow.failed", { message: data.message }, "error");
-        faces = []; busy = false; workerReady = false;
-        canvas.dataset.effectState = "unavailable";
-        canvas.dataset.effectError = data.message;
-        worker.terminate();
-      }
+    const fail = (message) => {
+      logEvent("face-flow.failed", {message}, "error");
+      faces=[];busy=false;workerReady=false;
+      canvas.dataset.effectState="unavailable";canvas.dataset.effectError=message;
+      worker?.terminate();
     };
-    worker.onerror = (event) => {
-      logEvent("face-flow.worker-error", { message: event.message }, "error");
-      faces = []; busy = false; workerReady = false;
-      canvas.dataset.effectState = "unavailable";
-      worker.terminate();
+    const receive = ({data}) => {
+      if(stopped)return;
+      if(data.type==="ready") {
+        timers.clearTimeout(initTimeout);
+        logEvent("face-flow.ready", {engine:fallbackStarted?"main-thread":"worker"});
+        workerReady=true;canvas.dataset.effectState="tracking";
+      }
+      if(data.type==="flow") {faces=data.faces;busy=false;lastFaceTime=performance.now();canvas.dataset.faceCount=String(faces.length);}
+      if(data.type==="error") { if(!fallbackStarted)void startFallback(data.message);else fail(data.message); }
     };
-    worker.postMessage({
-      type: "init", width: ANALYSIS_WIDTH, height: ANALYSIS_HEIGHT,
-      assetsUrl: new URL(`${import.meta.env.BASE_URL}vision/`, window.location.href).href,
-    });
+    const startFallback = async (reason) => {
+      if(stopped || fallbackStarted)return;
+      fallbackStarted=true;timers.clearTimeout(initTimeout);worker?.terminate();
+      workerReady=false;busy=false;faces=[];
+      canvas.dataset.effectState="loading";
+      logEvent("face-flow.fallback", {reason}, "warn");
+      try {
+        const {createMainThreadFaceFlow}=await import("../lib/mainThreadFaceFlow.js");
+        if(stopped)return;
+        const engine=await createMainThreadFaceFlow(init);
+        if(stopped){engine.terminate();return;}
+        worker=engine;worker.onmessage=receive;receive({data:{type:"ready"}});
+      }catch(error){if(!stopped)fail(error.message);}
+    };
+    try {
+      if(!window.Worker || !window.OffscreenCanvas || !window.createImageBitmap)throw new Error("Worker canvas unavailable");
+      worker=new Worker(new URL("../workers/faceFlow.worker.js", import.meta.url),{type:"module"});
+      worker.onmessage=receive;
+      worker.onerror=event=>{event.preventDefault();void startFallback(event.message || "Worker failed");};
+      worker.postMessage(init);
+      initTimeout=timers.setTimeout(()=>void startFallback("Worker startup timed out"),12000);
+    }catch(error){void startFallback(error.message);}
 
     const analyze = async (video, timestamp) => {
       busy = true;
@@ -106,10 +113,10 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
         analysisContext.setTransform(-1, 0, 0, 1, ANALYSIS_WIDTH, 0);
         analysisContext.drawImage(video, region.x, region.y, region.size, region.size, 0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
         analysisContext.restore();
-        const bitmap = await createImageBitmap(analysis);
-        if (stopped) { bitmap.close(); return; }
-        worker.postMessage({ type: "frame", bitmap, timestamp }, [bitmap]);
-      } catch { busy = false; }
+        const bitmap = fallbackStarted ? analysis : await createImageBitmap(analysis);
+        if (stopped) { bitmap.close?.(); return; }
+        worker.postMessage({ type: "frame", bitmap, timestamp }, fallbackStarted ? [] : [bitmap]);
+      } catch(error) { busy=false;logEvent("face-flow.frame-failed", {message:error.message}, "warn"); }
     };
 
     const emit = (face) => {
@@ -135,7 +142,7 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
       lastTime = time;
       const video = videoRef.current;
       if (!document.hidden && workerReady && !busy && video?.readyState >= 2 && video.videoWidth
-        && time - lastAnalysis >= 80 && video.currentTime !== lastVideoTime) {
+        && time - lastAnalysis >= (fallbackStarted ? 200 : 80) && video.currentTime !== lastVideoTime) {
         lastAnalysis = time; lastVideoTime = video.currentTime;
         analyze(video, time);
       }
@@ -171,7 +178,7 @@ export default function FaceFlowParticles({ videoRef, active, ready, showParticl
     };
     raf = requestAnimationFrame(render);
     return () => {
-      stopped = true; cancelAnimationFrame(raf); observer.disconnect(); worker.terminate();
+      stopped = true; cancelAnimationFrame(raf); observer.disconnect(); timers.clearTimeout(initTimeout); worker?.terminate();
       presenceCallback.current?.(false);
       canvas.dataset.faceCount = "0";
     };
