@@ -71,9 +71,13 @@ test('legacy Safari exit and denied requests can recover on a later tap',async()
   fixture.tap();await settle();fixture.tap();await settle();assert.equal(calls,2);
   fixture.listeners.get('webkitfullscreenchange')();fixture.doc.webkitFullscreenElement=null;fixture.listeners.get('webkitfullscreenchange')();fixture.tap();assert.equal(calls,3);
 });
-test('Home Screen standalone mode needs no fullscreen API and a route change preserves phone sharing',()=>{
-  const doc={addEventListener(){assert.fail('Standalone app must not request fullscreen');}};
-  installFirstTapFullscreen({doc,pageLocation:{origin:'https://photobooth.lightboxlive.io'},standalone:true});
+test('Home Screen booth still requests true fullscreen on a tap',async()=>{
+  const listeners=new Map();let calls=0;
+  const doc={documentElement:{requestFullscreen(){calls++;return Promise.resolve();}},addEventListener:(type,handler)=>listeners.set(type,handler),removeEventListener:(type)=>listeners.delete(type)};
+  const cleanup=installFirstTapFullscreen({doc,pageLocation:{origin:'https://photobooth.lightboxlive.io'},standalone:true,log:()=>{}});
+  assert.equal(calls,0);listeners.get('click')({isTrusted:true});assert.equal(calls,1);await settle();cleanup();
+});
+test('a route change preserves phone sharing',()=>{
   const listeners=new Map(),pageLocation={origin:'https://photobooth.lightboxlive.io'};
   installFirstTapFullscreen({doc:{documentElement:{requestFullscreen(){assert.fail('Phone share gesture must remain available');}},addEventListener:(type,handler)=>listeners.set(type,handler)},pageLocation});
   pageLocation.hash='#/takeaway/portrait';listeners.get('click')({isTrusted:true});

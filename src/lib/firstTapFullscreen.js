@@ -3,7 +3,7 @@ import { logEvent } from "./logger.js";
 export function installFirstTapFullscreen({ doc = document, pageLocation = window.location, log = logEvent,
   standalone = Boolean(globalThis.navigator?.standalone || globalThis.matchMedia?.("(display-mode: standalone)")?.matches),
 } = {}) {
-  if (standalone || pageLocation.origin !== "https://photobooth.lightboxlive.io" || pageLocation.hash?.startsWith("#/takeaway/")) return () => {};
+  if (pageLocation.origin !== "https://photobooth.lightboxlive.io" || pageLocation.hash?.startsWith("#/takeaway/")) return () => {};
   const active = () => Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
   let pending = false, disposed = false, wasActive = active(), hasRequested = false;
   const change = () => {
@@ -20,7 +20,7 @@ export function installFirstTapFullscreen({ doc = document, pageLocation = windo
     const request = root.requestFullscreen || root.webkitRequestFullscreen;
     if (!request) { if (!hasRequested) log("fullscreen.unavailable", {}, "warn"); hasRequested = true; return; }
     pending = true;
-    log("fullscreen.requested", { trigger: hasRequested ? "restore-tap" : "first-tap" });
+    log("fullscreen.requested", { trigger: hasRequested ? "restore-tap" : "first-tap", standalone });
     hasRequested = true;
     try {
       const result = root.requestFullscreen ? request.call(root, { navigationUI: "hide" }) : request.call(root);
