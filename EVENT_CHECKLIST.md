@@ -24,6 +24,29 @@ This is the running list of unfinished work and event preparation. Update it as 
 - [ ] Confirm Mac/backend/print-server startup and recovery after restart.
 - [ ] Review fallback prints and the ticket layout on actual stock.
 
+## Important links
+
+- [ ] Keep this link list bookmarked or open on the operator's computer for the event.
+
+- Frontend / iPad booth: https://photobooth.lightboxlive.io/every/
+- Backend: https://every-photobooth-backend.onrender.com/
+- Admin / print queue / analytics: https://every-photobooth-backend.onrender.com/status
+- Backend health: https://every-photobooth-backend.onrender.com/health
+- Backend configuration: https://every-photobooth-backend.onrender.com/config
+- Fixed print tunnel health: https://genuine-bee-humble.ngrok-free.app/health
+- Local print-server health (on the print Mac): http://localhost:9000/health
+- Local print-server status (requires the print-server bearer token): http://localhost:9000/status
+- Render backend management: https://dashboard.render.com/web/srv-dac4ndon74is7394o73g
+- ngrok endpoints: https://dashboard.ngrok.com/endpoints
+- ngrok domains: https://dashboard.ngrok.com/domains
+- ngrok usage: https://dashboard.ngrok.com/usage
+- Fal.ai account / credits: https://fal.ai/dashboard
+- Frontend repository: https://github.com/DaveSeidman/every.photobooth.fe
+- Backend repository: https://github.com/DaveSeidman/every.photobooth.be
+- Print-server repository: https://github.com/DaveSeidman/every.photobooth.print-server
+
+Guest takeaway links are unique to each photo; use the QR code shown on the booth. Credentials belong in the password manager or local configuration, not in this document.
+
 ## Day of
 
 - [ ] **Top up Fal.ai credits** and check the balance before opening.
