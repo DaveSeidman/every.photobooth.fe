@@ -24,7 +24,7 @@ The booth was left running successfully on November 4. The newest tap-response c
 - [ ] Practice putting the iPad into the stand and taking it out; aim to avoid removing it during the show.
 - [ ] Log into the TeamViewer desktop app on the desktop computer (currently using TeamViewer through the web).
 - [ ] Confirm the new print Mac uses the DNP QW410 driver, then get one successful physical print and verify the dashboard reports Printed.
-- [ ] Pull the latest print-server changes on the new Mac, set `NGROK_URL=https://genuine-bee-humble.ngrok-free.app` in `.env`, and verify `npm run start:booth` starts the server, fixed tunnel, and keep-awake process.
+- [ ] Pull the latest print-server changes on the new Mac, set `NGROK_URL=https://every-photobooth.ngrok.app` in `.env`, and verify `npm run start:booth` starts the server, fixed tunnel, and keep-awake process.
 - [ ] Test Home Screen app fullscreen entry/recovery and Guided Access on the actual iPad.
 
 - [ ] Get the rest of emperor prompt 2 (currently supplied only through “deep shadows…”).
@@ -56,7 +56,7 @@ Hold one finger in each upper corner of the screen for two seconds. The touch zo
 - Admin / print queue / analytics: https://every-photobooth-backend.onrender.com/status
 - Backend health: https://every-photobooth-backend.onrender.com/health
 - Backend configuration: https://every-photobooth-backend.onrender.com/config
-- Fixed print tunnel health: https://genuine-bee-humble.ngrok-free.app/health
+- Fixed print tunnel health: https://every-photobooth.ngrok.app/health
 - Local print-server health (on the print Mac): http://localhost:9000/health
 - Local print-server status (requires the print-server bearer token): http://localhost:9000/status
 - Render backend management: https://dashboard.render.com/web/srv-dac4ndon74is7394o73g
@@ -79,6 +79,12 @@ Guest takeaway links are unique to each photo; use the QR code shown on the boot
 - [ ] Set F1 fallback simulation to Normal operation and confirm automatic printing is enabled.
 - [ ] Reset the all-time completed counter to zero immediately before guests arrive.
 - [ ] Keep the status dashboard open and confirm it updates automatically.
+
+## Billing after the event — November 6
+
+- [ ] Reconcile the project fee, onsite fee, Render charges, ngrok upgrade, Fal.ai usage, and other agreed expenses using `BILLING.md` in the private print-server repository.
+- [ ] Collect receipts and invoice details, confirm billable allocations, and prepare the client invoice.
+- [ ] Review the recurring ngrok subscription after printing is no longer needed.
 
 ## Packing list
 
