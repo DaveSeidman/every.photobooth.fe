@@ -26,6 +26,7 @@ The booth was left running successfully on November 4. The newest tap-response c
 - [ ] Confirm the new print Mac uses the DNP QW410 driver, then get one successful physical print and verify the dashboard reports Printed.
 - [ ] Pull the latest print-server changes on the new Mac, set `NGROK_URL=https://every-photobooth.ngrok.app` in `.env`, and verify `npm run start:booth` starts the server, fixed tunnel, and keep-awake process.
 - [ ] Test Home Screen app fullscreen entry/recovery and Guided Access on the actual iPad.
+- [ ] Verify the 30-second inactivity reset on framing, photo review, style selection and error screens; confirm generation continues uninterrupted and the final takeaway countdown still works independently.
 
 - [ ] Get the rest of emperor prompt 2 (currently supplied only through “deep shadows…”).
 - [x] Generate both emperor thumbnails from the original couple photo and replace the temporary thumbnails.

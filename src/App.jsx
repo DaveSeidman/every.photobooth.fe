@@ -1,3 +1,4 @@
+import { useBoothInactivity } from "./hooks/useBoothInactivity.js";
 import OperatorPanel from "./components/OperatorPanel.jsx";
 import { track } from "./lib/analytics.js";
 import { downloadLogs, clearLogs, logEvent } from "./lib/logger.js";
@@ -47,6 +48,7 @@ function Booth() {
     try { localStorage.setItem("booth-camera-framing", JSON.stringify(value)); } catch { /* Private browsing may disable storage. */ }
   };
   const resetTimerRef = useRef(null);
+  const sessionVersionRef = useRef(0);
   const resetInProgress = useRef(false);
   const transitionTimerRef = useRef(null);
   const captureStartedRef = useRef(false);
@@ -146,6 +148,7 @@ function Booth() {
 
   const reset = useCallback((toAttract = true) => {
     logEvent("flow.reset", { toAttract });
+    sessionVersionRef.current++;
     resetInProgress.current = false;
     clearTimers();
     setStartLeaving(false);
@@ -179,6 +182,8 @@ function Booth() {
       transitionTimerRef.current = timers.setTimeout(() => reset(true), 900);
     }, 720);
   }, [reset]);
+
+  useBoothInactivity(phase, () => reset(true), appConfig.resetDelayMs);
 
   const refreshResultTimeout = useCallback(() => {
     if (resetInProgress.current) return;
@@ -265,12 +270,14 @@ function Booth() {
 
   const retake = async () => {
     track("photo_retake");
+    const sessionVersion = sessionVersionRef.current;
     clearCapture();
     setError("");
     setPhase("camera");
     try {
       await cameraRef.current.start();
-      startCountdown();
+      // A late camera-permission response must not revive an expired session.
+      if (sessionVersion === sessionVersionRef.current) startCountdown();
     } catch {
       setError("Camera access is unavailable. Check browser permissions and try again.");
     }
