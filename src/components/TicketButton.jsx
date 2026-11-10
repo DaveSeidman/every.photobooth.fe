@@ -1,4 +1,5 @@
 import { animateDetachedTicket } from "../lib/detachedTicket.js";
+import { animateRiiffsButton } from "../lib/riiffsButtonEffect.js";
 import { useEffect, useRef } from "react";
 import { logEvent } from "../lib/logger.js";
 import { ticketPull, ticketLightPoint, isTicketTap } from "../lib/ticketPull.js";
@@ -69,14 +70,22 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       if (blocked.current || latest.current.disabled) return;
       blocked.current = true;
       animation?.cancel();
-      if (method !== "pull") button.style.transform = "";
+      const isRiiffs = Boolean(button.closest(".booth--brand-riiffs, .takeaway-page--riiffs"));
+      if (isRiiffs || method !== "pull") button.style.transform = "";
       suppressClickUntil.current = performance.now() + 1000;
       const origin = pull?.origin ?? (lastGrabX.current >= .5 ? 0 : 100);
       const direction = origin === 0 ? 1 : -1;
       const x = pull?.x || 0; const y = pull?.y || 0; const angle = pull?.angle || 0;
-      button.style.transformOrigin = `${origin}% 0%`;
-      button.dataset.pulling = "true";
-      button.dataset.illuminated = "true";
+      if (isRiiffs) {
+        button.style.transformOrigin = "center";
+        button.style.removeProperty("--tear-progress");
+        delete button.dataset.pulling;
+        delete button.dataset.illuminated;
+      } else {
+        button.style.transformOrigin = `${origin}% 0%`;
+        button.dataset.pulling = "true";
+        button.dataset.illuminated = "true";
+      }
       emit("detach", { ...pull, progress: 1 }, method);
       // A native share sheet must be invoked while this trusted gesture is live.
       try { latest.current.onActivate?.(); }
@@ -85,11 +94,24 @@ export default function TicketButton({ onSelect, className = "primary-button", c
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!latest.current.onActivate) {
         // Navigation/capture starts on release, independently of the visual tear.
+        if (isRiiffs) {
+          animateRiiffsButton(button, { reduced });
+          button.style.visibility = "hidden";
+          logEvent("ticket.action-started", {label:button.textContent,method});
+          latest.current.onSelect?.();
+          return;
+        }
         try { animateDetachedTicket(button, {reduced}); }
         catch(error) { logEvent("ticket.visual-failed", {error}, "warn"); }
         button.style.visibility = "hidden";
         logEvent("ticket.action-started", {label:button.textContent,method});
         latest.current.onSelect?.();
+        return;
+      }
+      if (isRiiffs) {
+        button.style.visibility = "hidden";
+        animateRiiffsButton(button, { reduced })
+          .then(() => { if (!disposed) latest.current.onSelect?.(); });
         return;
       }
       animation = button.animate([
