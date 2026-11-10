@@ -26,6 +26,10 @@ export async function fetchExperience() {
         ...defaultExperience.everyStyles.find((fallback) => fallback.id === style.id),
         ...style,
       })),
+      riiffsStyles: (payload.riiffsStyles || defaultExperience.riiffsStyles).map((style) => ({
+        ...defaultExperience.riiffsStyles.find((fallback) => fallback.id === style.id),
+        ...style,
+      })),
       labels: { ...defaultExperience.labels, ...payload.labels },
       features: { ...defaultExperience.features, ...payload.features },
     };

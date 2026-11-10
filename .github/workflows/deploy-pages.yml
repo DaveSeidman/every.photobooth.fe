@@ -28,16 +28,31 @@ jobs:
         run: test -n "$VITE_API_URL"
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
-      - run: npm run build
+      - name: Build Every booth
+        run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
           VITE_PUBLIC_APP_URL: https://photobooth.lightboxlive.io/every
           VITE_BASE_PATH: /every/
           VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
-      - name: Assemble Pages site
+      - name: Assemble Every booth
         run: |
           mkdir -p _site/every
           cp -R dist/. _site/every/
+      - name: Build RiiFFS booth
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
+          VITE_PUBLIC_APP_URL: https://photobooth.lightboxlive.io/riiffs
+          VITE_BASE_PATH: /riiffs/
+          VITE_BRAND: riiffs
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
+      - name: Assemble RiiFFS booth
+        run: |
+          mkdir -p _site/riiffs
+          cp -R dist/. _site/riiffs/
+      - name: Assemble Pages site
+        run: |
           cp pages-root/index.html _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLoggedState } from "../hooks/useLoggedState.js";
+import { appConfig } from "../config.js";
 
 const titles = {
   attract: <>Welcome to <em className="thesis-italic">the future</em></>,
@@ -29,5 +30,10 @@ export default function BoothTitle({ phase, hasPhoto = true }) {
     animation.finished.then(()=>{if(outgoing)setShown(requested);}).catch(()=>{});
     return ()=>animation.cancel();
   }, [requested,shown]);
-  return <h1 ref={ref} className={`booth-title booth-title--${shown}`} id="booth-title" aria-live="polite">{titles[shown] || titles.camera}</h1>;
+  const brandTitles = appConfig.brand === "riiffs" ? {
+    attract: <>Meet yourself <em>under the moon</em></>, camera: <>Find your <em>light</em></>, countdown: <>Hold <em>the moment</em></>,
+    review: <>Keep <em>this one?</em></>, styles: <>Choose your <em>lunar finish</em></>, processing: <>Entering <em>the lunar garden</em></>,
+    results: <>A portrait <em>from another orbit</em></>, error: <>The moon moved.<em>Try once more.</em></>,
+  } : titles;
+  return <h1 ref={ref} className={`booth-title booth-title--${shown}`} id="booth-title" aria-live="polite">{brandTitles[shown] || brandTitles.camera}</h1>;
 }

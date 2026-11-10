@@ -1,0 +1,11 @@
+{
+  "id": "./",
+  "name": "RiiFFS Moonlit Portrait",
+  "short_name": "RiiFFS Booth",
+  "start_url": "../../",
+  "scope": "../../",
+  "display": "standalone",
+  "background_color": "#090817",
+  "theme_color": "#090817",
+  "icons": [{ "src": "riiffs-favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

@@ -2,7 +2,7 @@ import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useMemo, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { defaultExperience } from "../config.js";
+import { appConfig, defaultExperience } from "../config.js";
 import BoothTitle from "./BoothTitle.jsx";
 import CameraPhoto from "./CameraPhoto.jsx";
 import KioskChrome from "./KioskChrome.jsx";
@@ -26,7 +26,8 @@ const original = `${import.meta.env.BASE_URL}test-frames/image1.png`;
 export default function DesignPreview() {
   const { screen: requested = "attract" } = useParams();
   const screen = screens.some(([id]) => id === requested) ? requested : "attract";
-  const [style, setStyle] = useLoggedState("DesignPreview.style", defaultExperience.everyStyles[0]);
+  const previewStyles = appConfig.brand === "riiffs" ? defaultExperience.riiffsStyles : defaultExperience.everyStyles;
+  const [style, setStyle] = useLoggedState("DesignPreview.style", previewStyles[0]);
   const imageRef = useRef(null);
   const surfaceRef = useRef(null);
   const actionsRef = useRef(null);
@@ -62,22 +63,22 @@ export default function DesignPreview() {
   }, [screen]);
   const result = { photoId: "preview", styled: style.preview, styleLabel: style.label, styleId: style.id, original };
   return <>
-    <nav className="design-controls" aria-label="Design preview controls">
+    <nav className={`design-controls ${appConfig.brand === "riiffs" ? "design-controls--riiffs" : ""}`} aria-label="Design preview controls">
       <Link to="/">← Live booth</Link>
       <select aria-label="Preview screen" value={screen} onChange={(event) => go(event.target.value)}>
         {screens.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
       </select>
-      <select aria-label="Portrait style" value={style.id} onChange={(event) => setStyle(defaultExperience.everyStyles.find((item) => item.id === event.target.value))}>
-        {defaultExperience.everyStyles.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+      <select aria-label="Portrait style" value={style.id} onChange={(event) => setStyle(previewStyles.find((item) => item.id === event.target.value))}>
+        {previewStyles.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
       </select>
       {screen === "connected" && <button onClick={() => setReplay((value) => value + 1)}>Replay handoff</button>}
       <Link to={`/takeaway/preview?fallback=1&style=${style.id}`}>M01 Phone takeaway ↗</Link>
     </nav>
-    <main className={`booth booth--mode-every booth--${screen}`} data-title-phase={screen}><BoothTitle phase={screen} />
+    <main className={`booth booth--mode-every booth--brand-${appConfig.brand} booth--${screen}`} data-title-phase={screen}><BoothTitle phase={screen} />
       <KioskChrome phase={screen} />
       <CameraPhoto wobble={screen === "processing"} actionsRef={actionsRef} depth={["attract", "styles", "camera-reveal"].includes(screen) ? "back" : ["camera", "countdown", "flash"].includes(screen) ? "closeup" : "normal"}
         developing={screen === "review"} caption={screen === "review" ? "Is everyone in frame?" : ["processing", "results", "connected", "resetting"].includes(screen) ? style.label : null}
-        actions={screen === "review" ? <ReviewActions onRetake={() => go("camera")} onApprove={() => go("styles")} /> : screen === "attract" ? <TicketButton key="start" onSelect={() => go("camera")}>Start your Thesis</TicketButton> : screen === "camera" ? <TicketButton key="capture" className="shutter-button" onSelect={() => go("countdown")}>Take portrait</TicketButton> : null}>
+        actions={screen === "review" ? <ReviewActions onRetake={() => go("camera")} onApprove={() => go("styles")} /> : screen === "attract" ? <TicketButton key="start" className="primary-button" onSelect={() => go("camera")}>{appConfig.brand === "riiffs" ? "Enter the lunar room" : "Start your Thesis"}</TicketButton> : screen === "camera" ? <TicketButton key="capture" className="shutter-button" onSelect={() => go("countdown")}>{appConfig.brand === "riiffs" ? "Take the portrait" : "Take portrait"}</TicketButton> : null}>
         <div className={`camera camera--captured ${screen === "camera-reveal" ? "camera--revealing" : ""}`} ref={surfaceRef} data-result-ready={developed || ["results", "connected", "resetting", "camera-reveal"].includes(screen) || undefined}>
           <div className="camera__frame"><div className="camera__reveal"><img className="preview-camera" src={original} alt="Simulated live camera" /></div></div>
           <img className="camera__still" ref={imageRef} src={developed || ["results", "connected", "resetting", "camera-reveal"].includes(screen) ? style.preview : original} alt="Preview portrait" />
@@ -86,11 +87,15 @@ export default function DesignPreview() {
         </div>
         {screen === "processing" && <div className="progress" role="progressbar" aria-valuenow={58}><div className="progress__track"><span style={{width:"58%"}} /></div></div>}
       </CameraPhoto>
-      {screen === "attract" && <section className="attract-panel"><h1>Welcome to <em className="thesis-italic">the future</em></h1></section>}
-      {screen === "camera" && <section className="capture-panel"><h1>Frame <em>the Humans</em></h1></section>}
+      {screen === "attract" && <section className="attract-panel"><div className="attract-panel__copy">
+        <p className="eyebrow">{appConfig.brand === "riiffs" ? "RiiFFS / LUNAR ECLIPSE" : "Every / Thesis: 2027"}</p>
+        <h1>{appConfig.brand === "riiffs" ? <>Meet yourself <em className="thesis-italic">under the moon</em></> : <>Welcome to <em className="thesis-italic">the future</em></>}</h1>
+        <p className="attract-panel__intro">{appConfig.brand === "riiffs" ? "Step into the light. We’ll make a lunar portrait for you to take home." : "The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI."}</p>
+      </div></section>}
+      {screen === "camera" && <section className="capture-panel"><p className="eyebrow">{appConfig.brand === "riiffs" ? "RiiFFS / PORTRAIT STUDIO" : "Every portrait / 001"}</p><h1>{appConfig.brand === "riiffs" ? <>Find your <em>light</em></> : <>Frame <em>the Humans</em></>}</h1></section>}
       {screen === "countdown" && <section className="countdown"><h1>Hold <em>the pose</em></h1></section>}
       {["review", "flash"].includes(screen) && <CaptureReview photo={original} showPhoto={false} showActions={false} onRetake={() => go("camera")} onApprove={() => go("styles")} />}
-      {screen === "styles" && <StylePicker styles={defaultExperience.everyStyles} onSelect={(item) => { setStyle(item); go("processing"); }} />}
+      {screen === "styles" && <StylePicker styles={previewStyles} onSelect={(item) => { setStyle(item); go("processing"); }} />}
       {screen === "processing" && <section className="processing"><h1>Becoming <em>something else</em></h1></section>}
       {screen === "error" && <section className="flow-error" role="alert"><h1>Keep the photo.<em>Try again.</em></h1><p className="error-message">That took longer than expected.</p><div className="flow-error__actions"><button className="secondary-button" onClick={() => go("attract")}>Restart</button><button className="primary-button" onClick={() => go("styles")}>Choose a style</button></div></section>}
       {["results", "connected", "resetting"].includes(screen) && <Results result={result} previewSync={sync} imageRef={imageRef} surfaceRef={surfaceRef} actionsRef={actionsRef} isResetting={screen === "resetting"} onReset={() => go("resetting")} />}

@@ -326,16 +326,17 @@ function Booth() {
   const cameraVisible = true;
   const cameraDepth = ["styles", "camera-reveal"].includes(phase) ? "back" : phase === "attract" ? (facePresent ? "normal" : "back")
     : ["camera", "countdown", "flash"].includes(phase) || (phase === "error" && !captureBlob) ? "closeup" : "normal";
-  const styles = experience.everyStyles || defaultExperience.everyStyles;
+  const isRiiffs = appConfig.brand === "riiffs";
+  const styles = isRiiffs ? (experience.riiffsStyles || defaultExperience.riiffsStyles) : (experience.everyStyles || defaultExperience.everyStyles);
   const screenLabels = {
     attract: "01 / ATTRACT", camera: "02 / CAMERA SETUP",
     countdown: "03 / COUNTDOWN + FLASH", flash: "03 / COUNTDOWN + FLASH", review: "04 / REVIEW PHOTO",
-    styles: "05 / CHOOSE EVERY STYLE", processing: "06 / GENERATING PORTRAIT",
+    styles: isRiiffs ? "05 / CHOOSE RIIFFS FINISH" : "05 / CHOOSE EVERY STYLE", processing: "06 / GENERATING PORTRAIT",
     error: captureBlob ? "06 / GENERATING PORTRAIT" : "02 / CAMERA SETUP",
   };
 
   return (
-    <main className={`booth booth--${phase} booth--mode-every`} data-testid="booth" data-title-phase={phase}>
+    <main className={`booth booth--${phase} booth--mode-every booth--brand-${appConfig.brand}`} data-testid="booth" data-title-phase={phase}>
       <BoothTitle phase={phase} hasPhoto={Boolean(captureBlob)} />
       {!['results', 'resetting'].includes(phase) && <DeveloperScreenLabel name={screenLabels[phase]} />}
       <aside hidden={!showPromptControls} className="developer-controls" aria-label="Developer controls">
@@ -344,9 +345,9 @@ function Booth() {
       </aside>
       <CameraPhoto wobble={phase === "processing"} actionsRef={portraitActionsRef} depth={cameraDepth} visible={cameraVisible} developing={phase === "review"} caption={phase === "review" ? "Is everyone in frame?" : ["processing", "results", "resetting"].includes(phase) ? selectedStyle?.label : null} actions={
         phase === "review" ? <ReviewActions onRetake={retake} onApprove={approvePhoto} /> :
-        phase === "attract" ? <TicketButton key="start" className="primary-button" onSelect={begin} data-testid="begin-button">Start your Thesis</TicketButton> :
+        phase === "attract" ? <TicketButton key="start" className="primary-button" onSelect={begin} data-testid="begin-button">{isRiiffs ? "Enter the lunar room" : "Start your Thesis"}</TicketButton> :
         phase === "camera" || (phase === "error" && !captureBlob) ? <>
-          <TicketButton key="capture" className="shutter-button" onSelect={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting"} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? "Take portrait" : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</TicketButton>
+          <TicketButton key="capture" className="shutter-button" onSelect={cameraStatus === "ready" ? startCountdown : begin} disabled={cameraStatus === "requesting"} aria-label={cameraStatus === "ready" ? "Take portrait" : "Enable camera"}>{cameraStatus === "ready" ? (isRiiffs ? "Take the portrait" : "Take portrait") : cameraStatus === "requesting" ? "Connecting…" : "Enable camera"}</TicketButton>
         </> : null
       }>
         <Camera ref={cameraRef} visible={cameraVisible} particlesActive={phase === "attract"} onStatusChange={setCameraStatus} framing={framing} photo={portraitDeveloped && result ? result.styled : originalPhoto} imageRef={portraitImageRef} surfaceRef={portraitSurfaceRef} resultReady={portraitDeveloped} revealing={phase === "camera-reveal"} countdown={phase === "countdown" ? count : null} onDiagnostics={setCameraDiagnostics} onPresenceChange={setFacePresent}>
@@ -363,8 +364,8 @@ function Booth() {
         <section className={`attract-panel ${startLeaving ? "is-leaving" : ""}`} aria-hidden={startLeaving || undefined}>
           <div className="attract-panel__copy">
             <p className="eyebrow">{appConfig.kicker}</p>
-            <h1>Welcome to <em className="thesis-italic">the future</em></h1>
-            <p className="attract-panel__intro">The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI.</p>
+            <h1>{isRiiffs ? <>Meet yourself <em className="thesis-italic">under the moon</em></> : <>Welcome to <em className="thesis-italic">the future</em></>}</h1>
+            <p className="attract-panel__intro">{isRiiffs ? "Step into the light. We’ll make a lunar portrait for you to take home." : "The camera is ready. Keep your expression, choose a future, and leave with an Every portrait made by AI."}</p>
           </div>
         </section>
       )}
@@ -372,8 +373,8 @@ function Booth() {
       {(phase === "camera" || (phase === "error" && !captureBlob)) && (
         <section className="capture-panel">
           <div>
-            <p className="eyebrow">Every portrait / 001</p>
-            <h1>Frame <em>the Humans</em></h1>
+            <p className="eyebrow">{isRiiffs ? "RiiFFS / PORTRAIT STUDIO" : "Every portrait / 001"}</p>
+            <h1>{isRiiffs ? <>Find your <em>light</em></> : <>Frame <em>the Humans</em></>}</h1>
             {error && <p className="error-message" role="alert">{error}</p>}
           </div>
         </section>
@@ -438,10 +439,20 @@ function HandoffPreview() {
 
 export default function App() {
   useEffect(() => {
+    document.title = appConfig.title;
+    const brandMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (brandMeta) brandMeta.content = appConfig.brand === "riiffs" ? "RiiFFS Moonlit Portrait" : "Every Photobooth";
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.content = appConfig.brand === "riiffs" ? "#090817" : "#101511";
+    const icon = document.querySelector('link[rel="icon"]');
+    if (icon) icon.href = `${import.meta.env.BASE_URL}${appConfig.brand === "riiffs" ? "riiffs/riiffs-favicon.svg" : "every-favicon.svg"}`;
+    const manifest = document.querySelector('link[rel="manifest"]');
+    if (manifest) manifest.href = `${import.meta.env.BASE_URL}${appConfig.brand === "riiffs" ? "riiffs/riiffs-manifest.webmanifest" : "manifest.webmanifest"}`;
     const url = new URL(window.location.href);
-    if (!url.searchParams.has("brand")) return;
-    url.searchParams.delete("brand");
-    window.history.replaceState(window.history.state, "", url);
+    if (url.searchParams.has("brand")) {
+      url.searchParams.delete("brand");
+      window.history.replaceState(window.history.state, "", url);
+    }
   }, []);
 
   return (

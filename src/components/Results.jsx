@@ -10,6 +10,7 @@ import { photoUrl, takeawayUrl } from "../api.js";
 import { useHandoffTiming, usePhotoSync } from "../hooks/usePhotoSync.js";
 import DeveloperScreenLabel from "./DeveloperScreenLabel.jsx";
 import HandoffStage from "./HandoffStage.jsx";
+import { appConfig } from "../config.js";
 import KioskChrome from "./KioskChrome.jsx";
 
 export default function Results({ result, onReset, onActivity, timeoutVersion = 0, timeoutMs = 30_000, previewSync, isResetting = false, imageRef, surfaceRef, actionsRef }) {
@@ -52,11 +53,11 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
   const lockup = <div className={`results-lockup ${actionsRef ? "results-lockup--attached" : ""} ${isResetting ? "is-resetting" : ""}`}>
           <aside className="share-card" ref={scanCardRef}><StampFrame />
             <span className="share-card__star">✳</span>
-            <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={156} level="M" /></div>
+            <div className="share-card__qr"><QRCodeSVG value={shareUrl} size={156} level={appConfig.brand === "riiffs" ? "H" : "M"} fgColor={appConfig.brand === "riiffs" ? "#21153a" : "#000000"} imageSettings={appConfig.brand === "riiffs" ? { src: `${import.meta.env.BASE_URL}riiffs/riiffs-favicon.svg`, width: 28, height: 28, excavate: true } : undefined} /></div>
             <div>
               <p className="eyebrow">Connect your phone</p>
-              <h2>Scan to take<br />it home</h2>
-              <p className="share-card__instruction">{phoneFeedback || "Scan with your phone. Your portrait arrives on its own."}</p>
+              <h2>{appConfig.brand === "riiffs" ? <>Your moonlit<br />moment</> : <>Scan to take<br />it home</>}</h2>
+              <p className="share-card__instruction">{phoneFeedback || (appConfig.brand === "riiffs" ? "Scan to save your RiiFFS portrait to your phone." : "Scan with your phone. Your portrait arrives on its own.")}</p>
               {sync.status !== "connected" && <p className="share-card__connection" role="status">Connecting booth…</p>}
             </div>
           </aside>
@@ -85,7 +86,7 @@ export default function Results({ result, onReset, onActivity, timeoutVersion = 
       <header className="results__heading">
         <div>
           <p className="eyebrow">{`${result.styleLabel || "Every portrait"} / complete`}</p>
-          <h1 id="results-title">You, <em>after automation</em></h1>
+          <h1 id="results-title">{appConfig.brand === "riiffs" ? <>A portrait <em>from another orbit</em></> : <>You, <em>after automation</em></>}</h1>
         </div>
       </header>
       <div className="results__experience">

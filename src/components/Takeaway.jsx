@@ -58,7 +58,7 @@ export default function Takeaway() {
       if (!response.ok) throw new Error("Your image could not be prepared. Please try again.");
       const blob = await response.blob();
       if (!live) return;
-      fileRef.current = new File([blob], `every-portrait-${photoId}.jpg`, {type:blob.type});
+      fileRef.current = new File([blob], `${appConfig.brand === "riiffs" ? "riiffs-moonlit-portrait" : "every-portrait"}-${photoId}.jpg`, {type:blob.type});
       setFileReady(true); setMessage("");
     }).catch((error) => { if(live && error.name !== "AbortError") setMessage(error.message); });
     return () => { live=false; controller.abort(); };
@@ -81,7 +81,7 @@ export default function Takeaway() {
     let task;
     try {
       if (navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))) {
-        task = navigator.share({files:[file], title:appConfig.title, text:"My Every portrait"});
+        task = navigator.share({files:[file], title:appConfig.title, text:appConfig.brand === "riiffs" ? "My RiiFFS lunar portrait" : "My Every portrait"});
         Promise.resolve(task).then(()=>{notify("share-complete");setMessage("Share complete. You can share again anytime.");})
           .catch(error=>{notify(error.name === "AbortError" ? "share-cancelled" : "share-error");if(error.name!=="AbortError")setMessage(error.message);})
           .finally(()=>setSharing(false));
@@ -97,16 +97,16 @@ export default function Takeaway() {
   };
 
   return (
-    <main className="takeaway-page">
+    <main className={`takeaway-page ${appConfig.brand === "riiffs" ? "takeaway-page--riiffs" : ""}`}>
       <DeveloperScreenLabel name="M01 / TAKEAWAY" />
       <header className="takeaway-page__header">
-        <img src={`${import.meta.env.BASE_URL}thesis/img/thesis27.svg`} alt="Thesis: 2027" />
+        <img src={`${import.meta.env.BASE_URL}${appConfig.brand === "riiffs" ? "riiffs/riiffs-logo.png" : "thesis/img/thesis27.svg"}`} alt={appConfig.brand === "riiffs" ? "RiiFFS" : "Thesis: 2027"} />
         <span>{fallback ? "Preview" : sync.status === "connected" ? "Connected" : sync.status === "reconnecting" ? "Reconnecting…" : "Connecting…"}</span>
       </header>
-      <h1 className="takeaway-page__title">Yours <em>to keep</em></h1>
+      <h1 className="takeaway-page__title">{appConfig.brand === "riiffs" ? <>A little moonlight <em>to keep</em></> : <>Yours <em>to keep</em></>}</h1>
       <section className="takeaway-page__gallery" aria-label="Your Every portrait">
         <div className={`takeaway-page__portrait ${timing.animating ? "is-transferring-in" : ""}`} style={{ animationDelay: timing.animationDelay }}><StampFrame />
-          {photoId && <img ref={imageRef} key={`${stillUrl}-${retry}`} src={`${stillUrl}${retry ? `?retry=${retry}` : ""}`} alt="Your Every portrait" hidden={!ready || imageStatus !== "loaded"}
+          {photoId && <img ref={imageRef} key={`${stillUrl}-${retry}`} src={`${stillUrl}${retry ? `?retry=${retry}` : ""}`} alt={appConfig.brand === "riiffs" ? "Your RiiFFS lunar portrait" : "Your Every portrait"} hidden={!ready || imageStatus !== "loaded"}
             onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />}
           {!photoId ? <div className="takeaway-page__image-status"><p>This portrait link is incomplete.</p><p>Scan the QR code on the booth.</p></div>
             : imageStatus === "error" ? <div className="takeaway-page__image-status" role="alert"><p>This portrait could not be loaded.</p><button type="button" className="secondary-button" onClick={() => { setImageStatus("loading"); setRetry((value) => value + 1); }}>Try again</button></div>
