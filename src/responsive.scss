@@ -680,6 +680,17 @@ img, video { -webkit-user-drag: none; }
   .progress__track { height: 14px; border: 1px solid #ffffff66; background: #121212dc; box-shadow: 0 2px 10px #0009; }
   .progress__track span { height: 100%; background: var(--cyan); }
 }
+.progress__track { position: relative; overflow: hidden; }
+.progress__track .progress__indeterminate {
+  position: absolute; inset: 0 auto 0 0; width: 34%;
+  background: linear-gradient(90deg, transparent, #b8a5ff 32%, #fff 50%, #91dcff 68%, transparent);
+  box-shadow: 0 0 16px rgba(164, 139, 255, .72);
+  animation: portrait-progress-sweep 1.45s cubic-bezier(.45,0,.55,1) infinite;
+}
+@keyframes portrait-progress-sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(330%); }
+}
 
 .operator-panel {
   position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center;

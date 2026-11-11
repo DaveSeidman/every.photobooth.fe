@@ -3,6 +3,7 @@ import { logEvent } from "../lib/logger.js";
 import { timers } from "../lib/timers.js";
 import { useLoggedState } from "../hooks/useLoggedState.js";
 import { useEffect, useRef } from "react";
+import { appConfig } from "../config.js";
 
 const GRID_W = 76;
 const GRID_H = 76;
@@ -45,7 +46,7 @@ function loadPixels(src, width, height) {
   });
 }
 
-function PixelStorm({ source, result, active, onComplete, spinner, stormComplete, imageRef }) {
+function PixelStorm({ source, result, active, onComplete, stormComplete, imageRef }) {
   const backRef = useRef(null);
   const frontRef = useRef(null);
   const sourceRef = imageRef;
@@ -308,9 +309,16 @@ function PixelStorm({ source, result, active, onComplete, spinner, stormComplete
     return () => { disposed = true; cancelAnimationFrame(frame); };
   }, [active]);
 
+  const spinnerClass = `processing__spinner ${stormComplete ? "is-leaving" : ""}`;
+  const baseUrl = import.meta.env.BASE_URL;
+  const safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   return (
     <>
-      <video className={`processing__spinner ${stormComplete ? "is-leaving" : ""}`} ref={spinnerRef} style={{ opacity: 0 }} src={spinner} autoPlay loop muted playsInline aria-hidden="true" />
+      {appConfig.brand === "riiffs" ? (
+        <img className={`${spinnerClass} processing__bottle`} ref={spinnerRef} style={{ opacity: 0 }} src={`${baseUrl}riiffs/lunar-pulse-turntable.webp`} alt="" />
+      ) : (
+        <video className={spinnerClass} ref={spinnerRef} style={{ opacity: 0 }} src={`${baseUrl}thesis/stone.${safari ? "mov" : "webm"}`} autoPlay loop muted playsInline aria-hidden="true" />
+      )}
       <canvas className="processing__pixels processing__pixels--back" ref={backRef} style={{ opacity: 0 }} aria-hidden="true" />
       <canvas className="processing__pixels processing__pixels--front" ref={frontRef} style={{ opacity: 0 }} aria-hidden="true" />
     </>
@@ -321,7 +329,6 @@ export function ProcessingSurface({ source, result, imageRef, onDeveloped, onCom
   const [complete, setComplete] = useLoggedState("ProcessingSurface.complete", false);
   const completion = useRef(onComplete);
   completion.current = onComplete;
-  const safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   useEffect(() => {
     if (!complete) return;
     const timer = timers.setTimeout(() => completion.current?.(), 900);
@@ -329,7 +336,12 @@ export function ProcessingSurface({ source, result, imageRef, onDeveloped, onCom
   }, [complete]);
   return <div className={`processing__art processing__art--persistent ${complete ? "is-complete" : ""}`}>
     <PixelStorm source={source} result={result?.styled} imageRef={imageRef} active stormComplete={complete}
-      spinner={`${import.meta.env.BASE_URL}thesis/stone.${safari ? "mov" : "webm"}`}
-      onComplete={() => { setComplete(true); onDeveloped?.(); }} />
+      onComplete={() => {
+        // PixelStorm has just set this to 0 on its final frame. Clear it before
+        // the canvas retires so the finished portrait cannot remain CSS-hidden.
+        imageRef?.current?.style.removeProperty("--image-opacity");
+        setComplete(true);
+        onDeveloped?.();
+      }} />
   </div>;
 }

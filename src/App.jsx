@@ -356,7 +356,7 @@ function Booth() {
               setPhase("results"); refreshResultTimeout();
             }} />}
         </Camera>
-        {phase === "processing" && <div className="progress" role="progressbar" aria-label="Generating portrait" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}><div className="progress__track"><span style={{width:`${progress}%`}} /></div></div>}
+        {phase === "processing" && <div className="progress" role="progressbar" aria-label="Generating portrait" aria-valuetext="Creating your portrait"><div className="progress__track"><span className="progress__indeterminate" /></div></div>}
       </CameraPhoto>
       <KioskChrome phase={phase} cameraStatus={cameraStatus} />
 

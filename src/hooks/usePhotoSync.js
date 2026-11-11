@@ -36,6 +36,7 @@ export function usePhotoSync(photoId, role) {
     } catch { clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
     let stopped = false;
     let reconnect;
+    let initialConnect;
     let attempts = 0;
     const connect = () => {
       if (stopped) return;
@@ -44,6 +45,7 @@ export function usePhotoSync(photoId, role) {
       const socket = new WebSocket(websocketUrl());
       socketRef.current = socket;
       socket.addEventListener("open", () => {
+        if (stopped) { socket.close(); return; }
         logEvent("socket.open", { photoId, role });
         attempts = 0;
         logEvent("socket.send", { type: "join", photoId, role });
@@ -83,7 +85,7 @@ export function usePhotoSync(photoId, role) {
           return current;
         });
       });
-      socket.addEventListener("error", () => logEvent("socket.error", { photoId, role }, "error"));
+      socket.addEventListener("error", () => { if (!stopped) logEvent("socket.error", { photoId, role }, "error"); });
       socket.addEventListener("close", (event) => {
         motionSender.current?.clear();
         logEvent("socket.closed", { photoId, role, code: event.code, reason: event.reason, stopped });
@@ -92,8 +94,20 @@ export function usePhotoSync(photoId, role) {
         reconnect = timers.setTimeout(connect, Math.min(5000, 400 * (2 ** attempts++)));
       });
     };
-    connect();
-    return () => { logEvent("socket.cleanup", { photoId, role }); stopped = true; motionSender.current?.clear(); timers.clearTimeout(reconnect); socketRef.current?.close(); };
+    // React StrictMode replays effects in development. Defer the first handshake
+    // one task so the replay cleanup can cancel it before opening a throwaway socket.
+    initialConnect = timers.setTimeout(connect, 0);
+    return () => {
+      logEvent("socket.cleanup", { photoId, role });
+      stopped = true;
+      motionSender.current?.clear();
+      timers.clearTimeout(initialConnect);
+      timers.clearTimeout(reconnect);
+      const socket = socketRef.current;
+      if (socket?.readyState === WebSocket.CONNECTING) {
+        socket.addEventListener("open", () => socket.close(), { once: true });
+      } else socket?.close();
+    };
   }, [photoId, role]);
   const subscribeTakeawayInteraction = useCallback((listener) => {
     motionListeners.current.add(listener);

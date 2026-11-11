@@ -85,7 +85,10 @@
   .countdown strong { color: #c7a8ff; text-shadow: 0 0 48px #a05aff; }
 
   .capture-review, .style-picker, .processing, .flow-error, .results {
-    color: var(--paper); background:
+    color: var(--paper);
+  }
+  .style-picker, .flow-error {
+    background:
       radial-gradient(ellipse at 80% 10%, rgba(151,70,194,.2), transparent 48%),
       #0a091b;
   }
@@ -174,6 +177,19 @@
   }
   .camera-photo__object[data-result-ready]::after { background: transparent; }
   .camera-photo .camera { border-radius: 8px; overflow: hidden; }
+  &.booth--processing .camera { background: #1b1033; }
+  &.booth--processing .camera::after {
+    z-index: 3;
+    border-right-color: white;
+    border-bottom-color: white;
+  }
+  .processing__bottle {
+    inset: 22%;
+    width: 56%;
+    height: 56%;
+    filter: drop-shadow(0 12px 28px rgba(12, 4, 30, .72));
+    pointer-events: none;
+  }
   .capture-review__stage, .processing__copy, .flow-error__portrait, .result-hero__images {
     border: 1px solid rgba(235,216,255,.54); border-radius: 12px; background: rgba(11,9,30,.55);
     box-shadow: 0 0 28px rgba(128,99,255,.17), inset 0 1px rgba(255,255,255,.17);
@@ -190,11 +206,6 @@
 .booth--mode-every.booth--brand-riiffs {
   .processing__copy::before { content: none; display: none; background: none; }
   .result-hero { border: 1px solid rgba(235,216,255,.54); border-radius: 12px; background: transparent; box-shadow: 0 0 28px rgba(128,99,255,.17), inset 0 1px rgba(255,255,255,.17); }
-}
-
-/* The live review uses the captured photo card beneath this copy layer. */
-.booth--mode-every.booth--brand-riiffs .capture-review {
-  background: transparent;
 }
 
 /* Fine star field with a few connected constellations behind the interface. */
